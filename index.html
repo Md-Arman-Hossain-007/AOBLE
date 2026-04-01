@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AMLtab - Launch</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+        
+        .info-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        
+        .info-box ul {
+            color: #666;
+            padding-left: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .info-box li {
+            margin-bottom: 5px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .status.ready {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.85rem;
+            text-align: left;
+            overflow-x: auto;
+        }
+        
+        .api-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .api-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="frontend/public/logo_brand_v1.png" alt="AMLTAB Logo" style="width: 80px; height: 80px; margin-bottom: 20px;">
+        </div>
+        <h1>AMLtab</h1>
+        <p class="subtitle">AML Screening Tool for PEP, Sanctions & Watchlists</p>
+        
+        <div class="info-box">
+            <h3>Features:</h3>
+            <ul>
+                <li>3.3M+ names from OpenSanctions database</li>
+                <li>Fuzzy matching with confidence scores</li>
+                <li>Single & batch screening via API</li>
+                <li>PDF/CSV report downloads</li>
+                <li>Web interface for manual checks</li>
+            </ul>
+        </div>
+        
+        <div class="info-box">
+            <h3>Quick Start:</h3>
+            <div class="code-block">cd /root/.openclaw/workspace/Projects/AMLtab
+python3 src/main.py</div>
+            <p style="font-size: 0.85rem; color: #666; margin-top: 10px;">
+                Then open: <a href="http://localhost:8000" class="api-link">http://localhost:8000</a>
+            </p>
+        </div>
+        
+        <a href="http://localhost:8000" class="btn">🚀 Launch AMLtab</a>
+        <a href="./docs/API.md" class="btn btn-secondary">📚 API Docs</a>
+        
+        <div class="status ready">
+            ✅ Ready to launch — Run server to start
+        </div>
+    </div>
+</body>
+</html>
