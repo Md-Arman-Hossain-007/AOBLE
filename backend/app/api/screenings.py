@@ -24,6 +24,7 @@ from ..services import notification_service
 
 router = APIRouter()
 
+@router.post("", response_model=dict)
 @router.post("/", response_model=dict)
 async def screen_entity(
     request: schemas.ScreenRequest,
@@ -39,7 +40,7 @@ async def screen_entity(
     if not query_name:
         raise HTTPException(status_code=400, detail="Name is required for screening")
     
-    result = screening_service.screen(
+    result = await screening_service.screen(
         db=db,
         user_id=current_user.username,
         name=query_name,
@@ -49,24 +50,37 @@ async def screen_entity(
         threshold=request.threshold
     )
     
+    # Convert to expected frontend format
+    is_clear = result.match_count == 0
+    status_str = "Clear" if is_clear else "Review"
+    screning_id_str = str(result.screening_id)
+    
     # Trigger Notification
-    match_count = result.get("summary", {}).get("total_matches", 0)
-    status_str = result.get("overall_status", "Clear")
-    
-    notification_service.create_notification(
-        db=db,
-        notification=notification_schemas.NotificationCreate(
-            user_id=current_user.username,
-            title="Screening Complete",
-            message=f"Screening for '{query_name}' completed with status: {status_str}. Matches found: {match_count}.",
-            type="screening",
-            priority="high" if match_count > 0 else "normal",
-            link=f"/screenings/{result.get('screening_id')}",
-            metadata_json={"screening_id": result.get("screening_id"), "match_count": match_count}
+    try:
+        notification_service.create_notification(
+            db=db,
+            notification=notification_schemas.NotificationCreate(
+                user_id=current_user.username,
+                title="Screening Complete",
+                message=f"Screening for '{query_name}' completed with status: {status_str}. Matches found: {result.match_count}.",
+                type="screening",
+                priority="high" if result.match_count > 0 else "normal",
+                link=f"/screenings/{screning_id_str}",
+                metadata_json={"screening_id": screning_id_str, "match_count": result.match_count}
+            )
         )
-    )
+    except Exception as e:
+        print(f"Error creating notification: {e}")
     
-    return result
+    return {
+        "screening_id": screning_id_str,
+        "overall_status": status_str,
+        "summary": {
+            "total_matches": result.match_count,
+            "max_score": result.top_score * 100 if result.top_score else 0.0
+        },
+        "matches": [m.model_dump() for m in result.matches]
+    }
 
 @router.get("/entities/{entity_id:path}/report")
 async def get_entity_report(
@@ -257,6 +271,7 @@ async def get_screening(screening_id: str, db: Session = Depends(get_db)):
 
     raise HTTPException(status_code=404, detail="Screening result not found")
 
+@router.get("", response_model=List[ScreeningListEntry])
 @router.get("/", response_model=List[ScreeningListEntry])
 async def list_screenings(
     db: Session = Depends(get_db), 
@@ -264,6 +279,7 @@ async def list_screenings(
     offset: int = 0,
     type: Optional[str] = None,
     batch_id: Optional[str] = None,
+    query: Optional[str] = None,
     current_user: models.User = Depends(get_current_active_user)
 ) -> List[ScreeningListEntry]:
     legacy_list = []
@@ -278,6 +294,13 @@ async def list_screenings(
         elif type == "entity":
             query_legacy = query_legacy.filter(and_(models.Screening.company_name != None, models.Screening.company_name != ""))
         
+        if query:
+            query_legacy = query_legacy.filter(or_(
+                models.Screening.first_name.ilike(f"%{query}%"),
+                models.Screening.last_name.ilike(f"%{query}%"),
+                models.Screening.company_name.ilike(f"%{query}%")
+            ))
+            
         legacy_list = query_legacy.order_by(models.Screening.timestamp.desc()).offset(offset).limit(limit).all()
     
     # Fetch V2 screenings
@@ -296,6 +319,9 @@ async def list_screenings(
         query_v2 = query_v2.filter(models.ScreeningResult.schema_type == 'Person')
     elif type == "entity":
         query_v2 = query_v2.filter(models.ScreeningResult.schema_type != 'Person')
+        
+    if query:
+        query_v2 = query_v2.filter(models.ScreeningResult.customer_name.ilike(f"%{query}%"))
     
     v2_list = query_v2.order_by(models.ScreeningResult.screened_at.desc()).offset(offset).limit(limit).all()
     

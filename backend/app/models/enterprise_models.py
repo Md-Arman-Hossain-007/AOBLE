@@ -1,12 +1,25 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float, JSON, ARRAY
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from ..db.session import Base
 import datetime
 import uuid
+import os
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+# Use JSON for SQLite compatibility
+USE_SQLITE = os.getenv("USE_SQLITE", "true").lower() == "true"
+
+# SQLite compatible type assignments
+JSONB = JSON
+ARRAY = JSON
+
+# UUID type - use String for SQLite, UUID for PostgreSQL
+if USE_SQLITE:
+    PGUUID = String
+else:
+    from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 # Multi-Tenant Models
 

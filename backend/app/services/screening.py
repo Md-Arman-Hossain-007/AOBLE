@@ -96,8 +96,8 @@ def _calculate_weighted_score(hit: dict[str, Any]) -> float:
         
     weighted = (s_name * W_NAME) + (s_dob * W_DOB) + (s_nat * W_NAT) + (s_addr * W_ADDR)
     
-    # Ensure it's not radically lower than yente's core score
-    return round(max(weighted, total_score * 0.8), 4)
+    # Ensure we provide a nuanced score based on features, falling back naturally to Yente's core score
+    return round(max(weighted, total_score * 0.95), 4)
 
 def _resolve_sources(dataset_ids: list[str], db: Session) -> list[SourceDetail]:
     if not dataset_ids:
@@ -499,7 +499,10 @@ class ScreeningService:
         # Implementation from yente or internal DB
         # For now, just call yente
         async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.get(f"{YENTE_URL}/entities/{entity_id}")
+            resp = await client.get(
+                f"{YENTE_URL}/entities/{entity_id}",
+                params={"nested": "true"}
+            )
             if resp.status_code == 404:
                 raise ValueError("Entity not found")
             resp.raise_for_status()

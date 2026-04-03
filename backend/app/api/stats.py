@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract, and_, desc
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 from ..db.session import get_db
@@ -13,31 +13,65 @@ router = APIRouter()
 def get_billing_rate(is_rescreening: bool) -> float:
     return 0.50 if is_rescreening else 1.50
 
-@router.get("/")
+def get_period_date_range(period: str) -> tuple:
+    """Convert period string to start and end dates"""
+    now = datetime.utcnow()
+    
+    if period == "24h":
+        start = now - timedelta(hours=24)
+        return start, now
+    elif period == "7d":
+        start = now - timedelta(days=7)
+        return start, now
+    elif period == "30d":
+        start = now - timedelta(days=30)
+        return start, now
+    elif period == "90d":
+        start = now - timedelta(days=90)
+        return start, now
+    elif period == "1y":
+        start = now - timedelta(days=365)
+        return start, now
+    else:
+        # Default to 30 days
+        start = now - timedelta(days=30)
+        return start, now
+
+@router.get("", response_model=dict)
+@router.get("/", response_model=dict)
 def get_dashboard_stats(
+    period: str = Query("30d", description="Period filter: 24h, 7d, 30d, 90d, 1y"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
     now = datetime.utcnow()
-    
-    # 1. This month screening count (grouped by day, separated by individual/entity)
     start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Get date range based on period
+    start_date, end_date = get_period_date_range(period)
+    
+    # 1. Screening count for the period (grouped by day, separated by individual/entity)
+    start_of_period = start_date.replace(day=start_date.day, hour=0, minute=0, second=0, microsecond=0)
+    
     month_screenings = db.query(Screening).join(
         User, User.username == Screening.user_id
     ).filter(
         User.org_id == current_user.org_id,
-        Screening.timestamp >= start_of_month
+        Screening.timestamp >= start_date,
+        Screening.timestamp <= end_date
     ).all()
     month_screenings_v2 = db.query(ScreeningResult).join(
         User, User.username == ScreeningResult.screened_by
     ).filter(
         User.org_id == current_user.org_id,
-        ScreeningResult.screened_at >= start_of_month
+        ScreeningResult.screened_at >= start_date,
+        ScreeningResult.screened_at <= end_date
     ).all()
     
-    # Process month screenings
+    # Process period screenings
     daily_data = {}
-    for i in range(1, now.day + 1):
+    days_diff = (end_date - start_date).days
+    for i in range(1, min(days_diff + 1, 31)):
         daily_data[i] = {"individual": 0, "entity": 0, "rescreening_ind": 0, "rescreening_ent": 0}
         
     entity_history = set() # To track rescreenings loosely
@@ -47,7 +81,7 @@ def get_dashboard_stats(
         User, User.username == Screening.user_id
     ).filter(
         User.org_id == current_user.org_id,
-        Screening.timestamp < start_of_month
+        Screening.timestamp < start_date
     ).all()
     for s in previous_screenings:
         key = f"{s.first_name}-{s.last_name}-{s.company_name}"
@@ -65,6 +99,10 @@ def get_dashboard_stats(
         
         t_key = "entity" if is_entity else "individual"
         
+        # Ensure day exists in daily_data
+        if day not in daily_data:
+            daily_data[day] = {"individual": 0, "entity": 0, "rescreening_ind": 0, "rescreening_ent": 0}
+        
         if is_rescreening:
             key_name = f"rescreening_{t_key[:3]}"
             daily_data[day][key_name] = int(daily_data[day].get(key_name, 0)) + 1
@@ -79,6 +117,10 @@ def get_dashboard_stats(
         day = s.screened_at.day
         is_entity = s.schema_type != 'Person'
         t_key = "entity" if is_entity else "individual"
+        
+        # Ensure day exists in daily_data
+        if day not in daily_data:
+            daily_data[day] = {"individual": 0, "entity": 0, "rescreening_ind": 0, "rescreening_ent": 0}
         
         daily_data[day][t_key] = int(daily_data[day].get(t_key, 0)) + 1
         month_counts["total_screenings"] = month_counts["total_screenings"] + 1
@@ -197,6 +239,36 @@ def get_dashboard_stats(
         {"label": (now - timedelta(days=30*i)).strftime("%b %y"), "new": 20 + i*5, "updated": 15 + i*3, "removed": 5 + i}
         for i in range(5, -1, -1)
     ]
+
+    # --- Get screening matches for breakdown ---
+    total_matches = db.query(func.count(ScreeningResult.id)).join(
+        User, User.username == ScreeningResult.screened_by
+    ).filter(
+        User.org_id == current_user.org_id,
+        ScreeningResult.match_count > 0,
+        ScreeningResult.screened_at >= start_of_month
+    ).scalar() or 0
+    
+    non_matches = total_screenings_this_month - total_matches
+    
+    return {
+        "monthly_chart": monthly_chart,
+        "quarter_chart": quarter_chart,
+        "yearly_chart_data": yearly_chart_data,
+        "billing_chart": billing_chart,
+        "summary": {
+            "total_screenings": total_screenings_this_month,
+            "total_rescreenings": total_rescreenings_this_month,
+            "total_billing": float(f"{bill_amount:.2f}"),
+            "total_active_monitoring": total_active_monitoring or 0
+        },
+        "service_summary": service_summary,
+        "breakdown_individual": breakdown_individual,
+        "breakdown_corporate": breakdown_corporate,
+        "total_matches": total_matches,
+        "database_names": 5000000,
+        "match_rate": float(f"{(total_matches / total_screenings_this_month * 100) if total_screenings_this_month > 0 else 0:.1f}")
+    }
 
 @router.get("/activity-stats")
 def get_activity_stats(

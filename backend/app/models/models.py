@@ -1,12 +1,22 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float, JSON, ARRAY
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float, JSON
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from ..db.session import Base
 import datetime
 import uuid
+import os
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+# Use JSON for SQLite compatibility
+USE_SQLITE = os.getenv("USE_SQLITE", "true").lower() == "true"
+
+if USE_SQLITE:
+    JSONB = JSON
+    ARRAY = JSON
+    PGUUID = String
+else:
+    from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
 
 # Multi-Tenant Models
 
@@ -188,7 +198,7 @@ class Notification(Base):
     priority = Column(String, default="normal") # low, normal, high, urgent
     link = Column(String, nullable=True)
     is_read = Column(Boolean, default=False)
-    metadata_json = Column(JSON, nullable=True)
+    metadata_json = Column(JSONB, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class OSSource(Base):
@@ -209,10 +219,10 @@ class OSEntity(Base):
     id = Column(String, primary_key=True)
     schema = Column(String, nullable=False, index=True)
     caption = Column(String, nullable=True)
-    datasets = Column(ARRAY(String), nullable=True)
-    topics = Column(ARRAY(String), nullable=True)
+    datasets = Column(JSONB, nullable=True)
+    topics = Column(JSONB, nullable=True)
     properties = Column(JSONB, nullable=False)
-    referents = Column(ARRAY(String), nullable=True)
+    referents = Column(JSONB, nullable=True)
     first_seen = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     last_seen = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     is_active = Column(Boolean, nullable=False, default=True)
@@ -231,14 +241,14 @@ class OSProfile(Base):
     id = Column(String, primary_key=True)
     schema = Column(String, nullable=False, index=True)
     caption = Column(String, nullable=True)
-    topics = Column(ARRAY(String), nullable=True)
-    datasets = Column(ARRAY(String), nullable=True)
-    names = Column(ARRAY(String), nullable=True)
-    birth_dates = Column(ARRAY(String), nullable=True)
-    nationalities = Column(ARRAY(String), nullable=True)
-    countries = Column(ARRAY(String), nullable=True)
-    id_numbers = Column(ARRAY(String), nullable=True)
-    positions = Column(ARRAY(String), nullable=True)
+    topics = Column(JSONB, nullable=True)
+    datasets = Column(JSONB, nullable=True)
+    names = Column(JSONB, nullable=True)
+    birth_dates = Column(JSONB, nullable=True)
+    nationalities = Column(JSONB, nullable=True)
+    countries = Column(JSONB, nullable=True)
+    id_numbers = Column(JSONB, nullable=True)
+    positions = Column(JSONB, nullable=True)
     full_profile = Column(JSONB, nullable=False)
     first_seen = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     last_seen = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
@@ -262,7 +272,7 @@ class OSImportRun(Base):
 class ScreeningResult(Base):
     __tablename__ = "screening_results"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(PGUUID, primary_key=True, default=uuid.uuid4)
     screened_at = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     customer_ref = Column(String, nullable=False)
     customer_name = Column(String, nullable=False)
@@ -272,8 +282,8 @@ class ScreeningResult(Base):
     top_score = Column(Float, nullable=True)
     top_match_id = Column(String, nullable=True)
     top_match_caption = Column(String, nullable=True)
-    top_match_datasets = Column(ARRAY(String), nullable=True)
-    top_match_topics = Column(ARRAY(String), nullable=True)
+    top_match_datasets = Column(JSONB, nullable=True)
+    top_match_topics = Column(JSONB, nullable=True)
     all_matches = Column(JSONB, nullable=True)
     risk_level = Column(String, nullable=False, default='LOW')
     auto_decision = Column(String, nullable=False, default='clear')
@@ -349,7 +359,7 @@ class Webhook(Base):
     id = Column(String, primary_key=True, default=generate_uuid)
     org_id = Column(String, ForeignKey("organizations.id"), index=True)
     url = Column(String, nullable=False)
-    events = Column(ARRAY(String), nullable=False) # e.g., ["screening.completed", "case.assigned"]
+    events = Column(JSONB, nullable=False) # e.g., ["screening.completed", "case.assigned"]
     headers = Column(JSONB, default={})
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -381,7 +391,7 @@ class Case(Base):
     priority = Column(String, default="medium") # low, medium, high, critical
     assigned_to = Column(String, ForeignKey("users.username"), nullable=True)
     created_by = Column(String, ForeignKey("users.username"), nullable=False)
-    screening_result_id = Column(UUID(as_uuid=True), ForeignKey("screening_results.id"), nullable=True)
+    screening_result_id = Column(PGUUID, ForeignKey("screening_results.id"), nullable=True)
     customer_ref = Column(String, nullable=True)
     due_date = Column(DateTime, nullable=True)
     resolved_at = Column(DateTime, nullable=True)
@@ -529,7 +539,7 @@ class AIInsight(Base):
     __tablename__ = "ai_insights"
     
     id = Column(String, primary_key=True, default=generate_uuid)
-    screening_result_id = Column(UUID(as_uuid=True), ForeignKey("screening_results.id"), nullable=False)
+    screening_result_id = Column(PGUUID, ForeignKey("screening_results.id"), nullable=False)
     feature = Column(String, nullable=False) # anomaly_detection, false_positive_reduction, etc.
     confidence = Column(Float, nullable=False)
     explanation = Column(Text, nullable=False)
@@ -589,7 +599,7 @@ class Role(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
     description = Column(Text)
-    permissions = Column(ARRAY(String), default=[])
+    permissions = Column(JSONB, default=[])
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 # Enterprise Notification Models
@@ -603,7 +613,7 @@ class NotificationTemplate(Base):
     template_name = Column(String, nullable=False)
     subject = Column(String, nullable=False)
     body = Column(Text, nullable=False)
-    channels = Column(ARRAY(String), default=["email"]) # email, webhook, in_app
+    channels = Column(JSONB, default=["email"]) # email, webhook, in_app
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

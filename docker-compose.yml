@@ -32,6 +32,7 @@ services:
       REDIS_HOST: redis
       ELASTICSEARCH_URL: http://elasticsearch:9200
       SECRET_KEY: amltab-secret-key-2024
+      USE_SQLITE: "false"
       YENTE_URL: http://yente:8000
       YENTE_UPDATE_TOKEN: ${YENTE_UPDATE_TOKEN}
       OIDC_ISSUER: ${OIDC_ISSUER:-}
@@ -80,6 +81,7 @@ services:
       REDIS_HOST: redis
       ELASTICSEARCH_URL: http://elasticsearch:9200
       SECRET_KEY: amltab-secret-key-2024
+      USE_SQLITE: "false"
       YENTE_URL: http://yente:8000
       YENTE_UPDATE_TOKEN: ${YENTE_UPDATE_TOKEN}
       OIDC_ISSUER: ${OIDC_ISSUER:-}
@@ -107,6 +109,7 @@ services:
       REDIS_HOST: redis
       ELASTICSEARCH_URL: http://elasticsearch:9200
       SECRET_KEY: amltab-secret-key-2024
+      USE_SQLITE: "false"
       YENTE_URL: http://yente:8000
       YENTE_UPDATE_TOKEN: ${YENTE_UPDATE_TOKEN}
       OIDC_ISSUER: ${OIDC_ISSUER:-}

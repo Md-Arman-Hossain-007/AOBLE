@@ -41,9 +41,20 @@ def create_refresh_token(user_id: str) -> str:
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
+from sqlalchemy import or_, func
+
 def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
-    """Authenticate a user with username and password"""
-    user = db.query(User).filter(User.username == username).first()
+    """Authenticate a user with username or email (case-insensitive) and password"""
+    # Standardize login identifier to lowercase
+    login_id = username.lower()
+    
+    user = db.query(User).filter(
+        or_(
+            func.lower(User.username) == login_id,
+            func.lower(User.email) == login_id
+        )
+    ).first()
+    
     if not user:
         return None
     if not verify_password(password, user.password_hash):
