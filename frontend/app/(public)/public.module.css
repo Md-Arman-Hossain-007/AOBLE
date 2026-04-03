@@ -1,0 +1,189 @@
+.publicContainer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--background);
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--surface);
+  /* We can use color-mix for translucent effect with CSS variables */
+  background-color: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.navInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 72px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.navLogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.navLogo svg {
+  color: var(--primary);
+}
+
+.navLinks {
+  display: flex;
+  gap: 36px;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .navLinks {
+    display: none;
+  }
+  .navInner {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+.navLink {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--foreground);
+  transition: opacity 0.2s;
+}
+
+.navLink:hover {
+  opacity: 0.7;
+}
+
+.navActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.navLogin {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.navLogin:hover {
+  color: var(--primary);
+}
+
+.navButton {
+  padding: 10px 18px;
+  background-color: var(--primary);
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.navButton:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.mainContent {
+  flex: 1;
+}
+
+/* Footer Styles */
+.footer {
+  background-color: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 64px 24px 24px;
+}
+
+.footerInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 64px;
+  margin-bottom: 64px;
+}
+
+.footerBrand {
+  flex: 1;
+  min-width: 250px;
+}
+
+.footerLogo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 16px;
+}
+
+.footerLogo svg {
+  color: var(--primary);
+}
+
+.footerBrand p {
+  color: var(--secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.footerLinksGrid {
+  display: flex;
+  gap: 64px;
+  flex-wrap: wrap;
+}
+
+.footerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 120px;
+}
+
+.footerColumn h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.footerColumn a {
+  color: var(--secondary);
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+
+.footerColumn a:hover {
+  color: var(--primary);
+}
+
+.footerBottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  color: var(--secondary);
+  font-size: 0.85rem;
+}

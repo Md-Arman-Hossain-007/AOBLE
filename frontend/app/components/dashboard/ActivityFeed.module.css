@@ -1,0 +1,304 @@
+.feed {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.feedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.feedTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.liveIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #10b981;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+}
+
+.feedList {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 -24px;
+  padding: 0 24px;
+  max-height: 500px;
+}
+
+.feedList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.feedList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.feedList::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.feedItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s ease;
+  animation: slideIn 0.3s ease forwards;
+  opacity: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.feedItem:last-child {
+  border-bottom: none;
+}
+
+.feedItem:hover {
+  background: var(--background);
+  margin: 0 -24px;
+  padding: 12px 24px;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.itemTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.itemTitle a {
+  color: inherit;
+  transition: color 0.15s ease;
+}
+
+.itemTitle a:hover {
+  color: var(--primary);
+}
+
+.timestamp {
+  font-size: 0.75rem;
+  color: var(--secondary);
+  white-space: nowrap;
+}
+
+.description {
+  font-size: 0.813rem;
+  color: var(--secondary);
+  margin: 4px 0 0 0;
+  line-height: 1.4;
+}
+
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.metaTag {
+  font-size: 0.688rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  background: var(--background);
+  color: var(--secondary);
+  border-radius: 4px;
+}
+
+.linkIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--secondary);
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.feedItem:hover .linkIcon {
+  opacity: 1;
+}
+
+.linkIcon:hover {
+  background: var(--surface-hover);
+  color: var(--primary);
+}
+
+.viewAll {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
+  margin-top: 16px;
+  font-size: 0.813rem;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--primary-light);
+  border-radius: 10px;
+  transition: all 0.15s ease;
+}
+
+.viewAll:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  color: var(--secondary);
+  text-align: center;
+}
+
+.emptyState svg {
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.emptyState p {
+  font-size: 0.875rem;
+}
+
+/* Loading State */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeletonItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.skeletonItem:last-child {
+  border-bottom: none;
+}
+
+.skeletonIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--border);
+  animation: shimmer 1.5s infinite;
+}
+
+.skeletonContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeletonLine {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--border);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+/* Compact variant */
+.compact .feedItem {
+  padding: 8px 0;
+}
+
+.compact .iconWrapper {
+  width: 32px;
+  height: 32px;
+}
+
+.compact .description {
+  display: none;
+}
+
+.compact .metadata {
+  display: none;
+}

@@ -1,0 +1,124 @@
+.container {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--foreground);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--secondary);
+  font-size: 0.95rem;
+}
+
+.controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.searchWrapper {
+  flex: 1;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--secondary);
+}
+
+.searchInput {
+  width: 100%;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 12px 12px 48px;
+  color: var(--foreground);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.tableContainer {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  text-align: left;
+  padding: 16px 20px;
+  font-size: 0.75rem;
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+  background-color: var(--surface-hover);
+  border-bottom: 1px solid var(--border);
+}
+
+.tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.td {
+  padding: 16px 20px;
+  color: var(--foreground);
+}
+
+.badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.badgeClear {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+}
+
+.badgeMatched {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.iconBtn:hover {
+  color: var(--foreground);
+}

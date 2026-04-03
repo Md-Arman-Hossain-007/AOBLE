@@ -1,0 +1,427 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: var(--secondary);
+  font-size: 0.875rem;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Type Selector Grid */
+.typeSelector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.typeBtn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background-color: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  text-align: left;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.typeBtn:hover {
+  border-color: var(--border-focus);
+  background-color: var(--surface-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.activeType {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  .activeType {
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+}
+
+.typeIcon {
+  color: var(--secondary);
+  flex-shrink: 0;
+}
+
+.activeType .typeIcon {
+  color: var(--primary);
+}
+
+.typeText h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+
+.activeType .typeText h3 {
+  color: var(--primary);
+}
+
+.typeText p {
+  font-size: 0.75rem;
+  color: var(--secondary);
+}
+
+/* Form Card */
+.formCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .formCard {
+    padding: 20px;
+  }
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.input, .select {
+  padding: 10px 14px;
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.input::placeholder {
+  color: var(--secondary);
+  opacity: 0.7;
+}
+
+.select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f8fafc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  }
+  .input:focus, .select:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  }
+}
+
+/* Actions */
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.primaryBtn, .secondaryBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.primaryBtn {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.primaryBtn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.secondaryBtn {
+  background-color: transparent;
+  color: var(--secondary);
+  border: 1px solid var(--border);
+}
+
+.secondaryBtn:hover {
+  background-color: var(--surface-hover);
+  color: var(--foreground);
+}
+
+/* Batch Upload */
+.batchUpload {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.uploadArea {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 64px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: var(--background);
+  transition: all 0.2s ease;
+}
+
+.uploadArea:hover {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .uploadArea:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+  }
+}
+
+.uploadIcon {
+  color: var(--primary);
+  margin-bottom: 16px;
+}
+
+.uploadArea h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 8px;
+}
+
+.uploadArea p {
+  font-size: 0.875rem;
+  color: var(--secondary);
+  margin-bottom: 24px;
+}
+
+.browseBtn {
+  padding: 8px 16px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.browseBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.uploadInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--warning);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+}
+
+.uploadInfo a {
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+/* Error and Success Banners */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--danger);
+  font-size: 0.875rem;
+}
+
+.errorBanner span {
+  flex: 1;
+}
+
+.dismissBtn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.successBanner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--success);
+  font-size: 0.875rem;
+}
+
+.successBanner span {
+  flex: 1;
+}
+
+/* Drag Over State */
+.dragOver {
+  border-color: var(--primary) !important;
+  background-color: var(--primary-light) !important;
+  transform: scale(1.01);
+}
+
+/* Threshold Slider */
+.thresholdRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.thresholdSlider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.thresholdSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: var(--shadow-sm);
+}
+
+.thresholdSlider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: var(--shadow-sm);
+}
+
+.thresholdValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--primary);
+  min-width: 48px;
+  text-align: center;
+}
+
+.thresholdHint {
+  font-size: 0.75rem;
+  color: var(--secondary);
+}
+
+/* Download Link */
+.downloadLink {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.downloadLink:hover {
+  color: var(--primary-hover);
+}

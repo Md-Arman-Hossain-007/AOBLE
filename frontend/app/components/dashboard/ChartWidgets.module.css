@@ -1,0 +1,355 @@
+/* Widget Container */
+.widget {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.2s ease;
+}
+
+.widget:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.widgetHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.titleSection {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.widgetIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 1.25rem;
+}
+
+.widgetTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.widgetSubtitle {
+  font-size: 0.813rem;
+  color: var(--secondary);
+  margin: 4px 0 0 0;
+}
+
+.periodSelector {
+  display: flex;
+  gap: 4px;
+  background: var(--background);
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.periodBtn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--secondary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.periodBtn:hover {
+  color: var(--foreground);
+  background: var(--surface-hover);
+}
+
+.periodBtn.active {
+  color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chartContainer {
+  width: 100%;
+}
+
+/* Donut Chart Specific */
+.donutContainer {
+  position: relative;
+  width: 100%;
+}
+
+.donutCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.centerValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--foreground);
+  line-height: 1;
+}
+
+.centerLabel {
+  font-size: 0.75rem;
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.centerSubtext {
+  font-size: 0.688rem;
+  color: var(--secondary);
+  margin-top: 2px;
+}
+
+.donutLegend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--background);
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.legendItem:hover {
+  background: var(--surface-hover);
+}
+
+.legendColor {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  font-size: 0.813rem;
+  color: var(--foreground);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legendValue {
+  font-size: 0.813rem;
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+/* Custom Tooltip */
+.customTooltip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.tooltipLabel {
+  font-size: 0.813rem;
+  color: var(--secondary);
+  margin: 0 0 4px 0;
+}
+
+.tooltipValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.tooltipValue span {
+  color: var(--secondary);
+  font-weight: 400;
+}
+
+/* Threshold Badge */
+.thresholdBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #ef4444;
+}
+
+.thresholdDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Progress Ring */
+.progressRingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.progressRingValue {
+  position: absolute;
+  text-align: center;
+}
+
+.progressRingLabel {
+  font-size: 0.75rem;
+  color: var(--secondary);
+  margin-top: 4px;
+}
+
+/* Mini Stats */
+.miniStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.miniStatItem {
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--background);
+  border-radius: 10px;
+}
+
+.miniStatValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.miniStatLabel {
+  font-size: 0.688rem;
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* Chart Actions */
+.chartActions {
+  display: flex;
+  gap: 8px;
+}
+
+.chartActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--background);
+  color: var(--secondary);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chartActionBtn:hover {
+  background: var(--surface-hover);
+  color: var(--foreground);
+}
+
+/* Legend Custom */
+.legendWrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.legendList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.legendListItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.813rem;
+  color: var(--foreground);
+}
+
+.legendListIcon {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* Grid Layout for Widgets */
+.widgetsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.widgetsGrid.cols3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.widgetsGrid.cols4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .widgetsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .widgetsGrid.cols3,
+  .widgetsGrid.cols4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .widgetsGrid,
+  .widgetsGrid.cols3,
+  .widgetsGrid.cols4 {
+    grid-template-columns: 1fr;
+  }
+}

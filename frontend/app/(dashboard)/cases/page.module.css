@@ -1,0 +1,174 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--foreground);
+  letter-spacing: -0.04em;
+}
+
+/* Stats */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.statCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--secondary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: block;
+  letter-spacing: 0.05em;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+/* Case Inbox */
+.inboxContainer {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  text-align: left;
+  padding: 16px 24px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--secondary);
+  background-color: var(--surface-hover);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.td {
+  padding: 16px 24px;
+  font-size: 0.875rem;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+}
+
+.tr:last-child .td {
+  border-bottom: none;
+}
+
+.tr:hover {
+  background-color: var(--surface-hover);
+}
+
+.priorityBadge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.priorityHigh { background-color: rgba(239, 68, 68, 0.1); color: #f87171; }
+.priorityMedium { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.priorityLow { background-color: rgba(59, 130, 246, 0.1); color: #60a5fa; }
+
+.statusBadge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.assignee {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: var(--surface-hover);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid var(--border);
+}
+
+/* Case Detail View */
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 32px;
+}
+
+.mainPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

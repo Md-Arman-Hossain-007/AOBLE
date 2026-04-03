@@ -1,0 +1,225 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Hero Section */
+.hero {
+  padding: 120px 24px;
+  text-align: center;
+  background: radial-gradient(circle at top center, var(--primary-light) 0%, transparent 60%);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hero {
+    background: radial-gradient(circle at top center, rgba(99, 102, 241, 0.15) 0%, transparent 60%);
+  }
+}
+
+.heroContent {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.badge {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.heroTitle {
+  font-size: 4rem;
+  font-weight: 800;
+  color: var(--foreground);
+  line-height: 1.1;
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+}
+
+.highlight {
+  color: var(--primary);
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  color: var(--secondary);
+  line-height: 1.6;
+  margin-bottom: 40px;
+  max-width: 600px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .heroActions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+.primaryBtn, .secondaryBtn, .primaryBtnWhite {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: var(--radius-md);
+  font-size: 1.05rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.primaryBtn {
+  background-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.39);
+}
+
+.primaryBtn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.23);
+}
+
+.secondaryBtn {
+  background-color: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.secondaryBtn:hover {
+  background-color: var(--surface-hover);
+}
+
+.primaryBtnWhite {
+  background-color: white;
+  color: var(--primary);
+}
+
+.primaryBtnWhite:hover {
+  background-color: #f8fafc;
+  transform: translateY(-2px);
+}
+
+/* Features */
+.featuresSection {
+  padding: 96px 0;
+  background-color: var(--surface);
+}
+
+.sectionHeader {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 64px;
+}
+
+.sectionHeader h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+
+.sectionHeader p {
+  font-size: 1.125rem;
+  color: var(--secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
+}
+
+.featureCard {
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  padding: 32px;
+  border-radius: var(--radius-xl);
+  transition: all 0.3s ease;
+}
+
+.featureCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-focus);
+}
+
+.iconWrapper {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background-color: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+
+
+.featureCard h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin-bottom: 12px;
+}
+
+.featureCard p {
+  color: var(--secondary);
+  line-height: 1.6;
+}
+
+/* CTA */
+.ctaSection {
+  padding: 96px 0;
+}
+
+.ctaCard {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  padding: 64px 40px;
+  border-radius: 24px;
+  text-align: center;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 20px 40px -10px rgba(79, 70, 229, 0.4);
+}
+
+.ctaCard h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.ctaCard p {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  margin-bottom: 32px;
+  max-width: 500px;
+}
