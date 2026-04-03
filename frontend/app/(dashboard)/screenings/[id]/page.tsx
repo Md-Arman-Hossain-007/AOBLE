@@ -27,7 +27,8 @@ import {
   Layers,
   ArrowUpRight,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Copy
 } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -127,6 +128,7 @@ export default function ScreeningDetailPage() {
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToasts(prev => [...prev, { id: Date.now(), message, type }]);
@@ -134,6 +136,20 @@ export default function ScreeningDetailPage() {
 
   const removeToast = (id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(text);
+    addToast("Screening ID copied to clipboard", "info");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleDeepDive = (entityId: string) => {
+    setIsNavigating(true);
+    router.push(`/screenings/entity/${entityId}?sid=${id}`);
   };
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -247,7 +263,8 @@ export default function ScreeningDetailPage() {
     }
   };
 
-  if (loading) {
+  if (loading || isNavigating) {
+    const loaderText = isNavigating ? "Synthesizing Entity Dossier..." : "Retrieving screening intelligence...";
     return (
       <div className={styles.container}>
         {/* Results Header - Pre-rendered */}
@@ -261,30 +278,40 @@ export default function ScreeningDetailPage() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {[1,2,3,4,5].map(i => (
-            <div key={i} style={{ 
-              background: 'rgba(255,255,255,0.02)', 
-              border: '1px solid var(--border)', 
-              borderRadius: '16px', 
-              padding: '24px', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '16px',
-              opacity: 1 - (i * 0.15)
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                 <div className="skeleton" style={{ width: '250px', height: '24px' }}></div>
-                 <div className="skeleton" style={{ width: '100px', height: '24px' }}></div>
+        {isNavigating ? (
+          <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px' }}>
+             <div className="pulsate" style={{ width: '48px', height: '48px', borderRadius: '50%', border: '4px solid var(--primary)', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }}></div>
+             <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--primary)', letterSpacing: '0.2em' }}>INTEL SYNTHESIS IN PROGRESS</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--secondary)', marginTop: '8px' }}>{loaderText}</div>
+             </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {[1,2,3,4,5].map(i => (
+              <div key={i} style={{ 
+                background: 'rgba(255,255,255,0.02)', 
+                border: '1px solid var(--border)', 
+                borderRadius: '16px', 
+                padding: '24px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '16px',
+                opacity: 1 - (i * 0.15)
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                   <div className="skeleton" style={{ width: '250px', height: '24px' }}></div>
+                   <div className="skeleton" style={{ width: '100px', height: '24px' }}></div>
+                </div>
+                <div className="skeleton" style={{ width: '100%', height: '14px', borderRadius: '4px' }}></div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                   <div className="skeleton" style={{ width: '80px', height: '20px', borderRadius: '4px' }}></div>
+                   <div className="skeleton" style={{ width: '80px', height: '20px', borderRadius: '4px' }}></div>
+                </div>
               </div>
-              <div className="skeleton" style={{ width: '100%', height: '14px', borderRadius: '4px' }}></div>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                 <div className="skeleton" style={{ width: '80px', height: '20px', borderRadius: '4px' }}></div>
-                 <div className="skeleton" style={{ width: '80px', height: '20px', borderRadius: '4px' }}></div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -307,7 +334,16 @@ export default function ScreeningDetailPage() {
           </button>
           <h1 className={styles.title}>{subjectName}</h1>
           <div className={styles.metaInfo}>
-            <span>Ref: {data.screening_id.slice(0, 12)}...</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Screening ID: <code style={{ fontSize: '0.75rem', color: 'var(--primary)', opacity: 0.8 }}>{data.screening_id}</code>
+              <button 
+                onClick={() => copyToClipboard(data.screening_id)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: copiedId === data.screening_id ? '#10b981' : 'var(--secondary)', padding: '2px', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}
+                title="Copy Screening ID"
+              >
+                {copiedId === data.screening_id ? <Check size={12} /> : <Copy size={12} />}
+              </button>
+            </span>
             <span>•</span>
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Calendar size={14} /> {new Date(data.timestamp).toLocaleString()}
@@ -345,9 +381,18 @@ export default function ScreeningDetailPage() {
         </div>
         <div className={styles.summaryItem}>
           <span className={styles.summaryLabel}>Screening ID</span>
-          <span className={styles.summaryValue} style={{ fontSize: '0.75rem', fontFamily: 'monospace' }}>
-            {data.screening_id.split('-')[0]}...
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className={styles.summaryValue} style={{ fontSize: '0.7rem', fontFamily: 'monospace', opacity: 0.8 }}>
+              {data.screening_id}
+            </span>
+            <button 
+              onClick={() => copyToClipboard(data.screening_id)} 
+              style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${copiedId === data.screening_id ? '#10b981' : 'var(--border)'}`, borderRadius: '4px', cursor: 'pointer', color: copiedId === data.screening_id ? '#10b981' : 'var(--secondary)', padding: '4px', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}
+              title="Copy to Clipboard"
+            >
+              {copiedId === data.screening_id ? <Check size={12} /> : <Copy size={12} />}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -423,7 +468,24 @@ export default function ScreeningDetailPage() {
                 <div key={idx} className={`${styles.matchCard} ${idx === 0 ? styles.topMatchCard : ''}`}>
                   <div className={styles.matchCardHeader}>
                     <div className={styles.matchInfo}>
-                      <span className={styles.matchName}>{match.name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className={styles.matchName}>{match.name}</span>
+                        {idx === 0 && (
+                          <span style={{ 
+                            background: '#f43f5e', 
+                            color: 'white', 
+                            fontSize: '0.6rem', 
+                            padding: '2px 10px', 
+                            borderRadius: '99px', 
+                            fontWeight: 900, 
+                            letterSpacing: '0.05em',
+                            boxShadow: '0 0 10px rgba(244, 63, 94, 0.3)',
+                            textTransform: 'uppercase'
+                          }}>
+                            RECOMMENDED
+                          </span>
+                        )}
+                      </div>
                       <span style={{ fontSize: '0.85rem', color: 'var(--secondary)', fontWeight: 600 }}>{match.match_type}</span>
                     </div>
                     <div className={`${styles.matchScore} ${idx === 0 || Math.round(match.match_score) >= 80 ? styles.matchScoreHigh :
@@ -516,9 +578,13 @@ export default function ScreeningDetailPage() {
                         className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${match.status === 'false_positive' ? styles.falsePositiveBtnActive : ''}`}
                       >Mark False Positive</button>
                     </div>
-                    <Link href={`/screenings/entity/${match.entity_id}?sid=${id}`} className={styles.deepDiveBtn}>
-                      View Deep Dive <ArrowUpRight size={16} />
-                    </Link>
+                    <button 
+                      onClick={() => handleDeepDive(match.entity_id || "")} 
+                      className={styles.deepDiveBtn}
+                      disabled={isNavigating}
+                    >
+                      {isNavigating ? "Synthesizing..." : "View Deep Dive"} <ArrowUpRight size={16} />
+                    </button>
                   </div>
                 </div>
               ))

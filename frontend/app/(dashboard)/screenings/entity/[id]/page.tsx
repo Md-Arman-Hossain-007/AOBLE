@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
+import { LoadingSpinner } from "../../../../components/LoadingSpinner";
 import { 
   Shield, 
   User, 
@@ -293,7 +294,7 @@ function EntityDetailContent() {
   if (loading) {
     return (
       <div className={styles.container}>
-        {/* Top Professional Control Header - Pre-rendered */}
+        {/* Top Professional Control Header - Always Visible */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
           <div className={styles.backBtn} style={{ opacity: 0.5, cursor: 'default' }}>
             <ArrowLeft size={14} /> Screen Results Archive
@@ -308,22 +309,8 @@ function EntityDetailContent() {
           </div>
         </div>
 
-        {skeletonHero}
-
-        <div className={styles.mainLayout}>
-          <section className={styles.mainArea}>
-             <nav className={styles.tabsHeader} style={{ display: 'flex', gap: '20px', padding: '0 20px', borderBottom: '1px solid var(--border)', marginBottom: '30px' }}>
-                {["OVERVIEW", "DETAILS", "SOURCES", "SANCTIONS", "RELATIONSHIPS", "OCCUPANCY"].map(t => (
-                  <div key={t} style={{ padding: '12px 0', fontSize: '0.7rem', fontWeight: 900, color: 'var(--secondary)', opacity: 0.3 }}>{t}</div>
-                ))}
-             </nav>
-             {skeletonContent}
-          </section>
-          
-          <aside className={styles.sidebar} style={{ opacity: 0.3 }}>
-             <div className={styles.sidebarCard} style={{ height: '200px' }}></div>
-             <div className={styles.sidebarCard} style={{ height: '300px' }}></div>
-          </aside>
+        <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <LoadingSpinner text="Synthesizing Jurisdictional Intelligence..." size="large" />
         </div>
       </div>
     );

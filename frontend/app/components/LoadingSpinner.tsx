@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import styles from "./LoadingSpinner.module.css";
 
@@ -14,19 +15,42 @@ export function LoadingSpinner({
   text,
   fullPage = false 
 }: LoadingSpinnerProps) {
+  const statuses = [
+    "Synthesizing Dossier",
+    "Scanning Watchlists",
+    "Neural Fraud Scoring",
+    "Biometric Verification",
+    "Jurisdictional Logic Sync",
+    "Generating Audit Trail"
+  ];
+
+  const [statusIdx, setStatusIdx] = useState(0);
+
+  useEffect(() => {
+    if (!text) {
+      const interval = setInterval(() => {
+        setStatusIdx((prev) => (prev + 1) % statuses.length);
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [text, statuses.length]);
+
   const spinnerContent = (
     <div className={`${styles.spinnerContainer} ${styles[size]}`}>
       <div className={styles.logoWrapper}>
         <Image 
           src="/logo_brand_v1.png" 
           alt="AMLTAB Logo" 
-          width={size === "small" ? 40 : size === "large" ? 80 : 64}
-          height={size === "small" ? 40 : size === "large" ? 80 : 64}
-          className={`${styles.logo} pulsate`}
+          width={size === "small" ? 48 : size === "large" ? 96 : 72}
+          height={size === "small" ? 48 : size === "large" ? 96 : 72}
+          className={styles.logo}
           priority
         />
       </div>
-      {text && <p className={styles.text}>{text}</p>}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <p className={styles.text}>{text || "AMLTAB SECURE RETRIEVAL"}</p>
+        {!text && <p className={styles.statusSub}>{statuses[statusIdx]}...</p>}
+      </div>
     </div>
   );
 
