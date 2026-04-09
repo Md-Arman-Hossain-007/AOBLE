@@ -35,7 +35,7 @@ app.include_router(monitoring.router, prefix=f"{settings.API_V1_STR}/monitoring"
 app.include_router(stats.router, prefix=f"{settings.API_V1_STR}/stats", tags=["Stats"])
 app.include_router(admin.router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
 app.include_router(compliance.router, prefix=f"{settings.API_V1_STR}/compliance", tags=["Compliance"])
-app.include_router(case_management.router, prefix=f"{settings.API_V1_STR}/compliance", tags=["Case Management"])
+app.include_router(case_management.router, tags=["Case Management"])
 app.include_router(bulk.router)
 app.include_router(billing.router, prefix=f"{settings.API_V1_STR}/billing", tags=["Billing"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifications", tags=["Notifications"])

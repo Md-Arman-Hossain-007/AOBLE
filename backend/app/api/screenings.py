@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 
 
@@ -85,13 +86,36 @@ async def screen_entity(
 @router.get("/entities/{entity_id:path}/report")
 async def get_entity_report(
     entity_id: str, 
+    screening_id: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
     try:
-        print(f"DEBUG: Generating report for entity_id: {entity_id}")
+        print(f"DEBUG: Generating report for entity_id: {entity_id} with screening: {screening_id}")
         # Fetch full entity details
         details = await screening_service.get_entity_details(entity_id, db=db)
+        
+        # Merge screening metadata if screening_id is provided
+        if screening_id:
+            try:
+                uuid_val = uuid.UUID(screening_id)
+                v2 = db.query(models.ScreeningResult).filter(models.ScreeningResult.id == uuid_val).first()
+                if v2:
+                    details["screening_metadata"] = {
+                        "id": str(v2.id),
+                        "status": v2.status,
+                        "auto_decision": v2.auto_decision,
+                        "final_decision": v2.final_decision,
+                        "notes": v2.notes,
+                        "risk_level": v2.risk_level,
+                        "screened_at": v2.screened_at.isoformat() if v2.screened_at else None,
+                        "reviewed_by": v2.reviewed_by,
+                        "match_count": v2.match_count
+                    }
+                    details["query"] = v2.query_payload
+            except Exception as e:
+                print(f"DEBUG: Error merging screening details: {e}")
+
         print(f"DEBUG: Fetched details for {details.get('caption', 'Unknown')}")
         
         # Generate PDF report
@@ -505,7 +529,7 @@ async def get_screening_report(
                     top_match = v2.all_matches[0]
                     entity_id = top_match.get("entity_id")
                     if entity_id:
-                        return await get_entity_report(entity_id, db, current_user)
+                        return await get_entity_report(entity_id=entity_id, screening_id=screening_id, db=db, current_user=current_user)
                 
                 # If no matches OR no entity_id, generate a "Clear" report
                 clear_data = {
@@ -514,18 +538,21 @@ async def get_screening_report(
                     "schema": v2.schema_type or "Person",
                     "properties": v2.query_payload,
                     "is_clear": True,
-                    "screened_at": v2.screened_at.isoformat() if v2.screened_at else None,
-                    "status": v2.status,
-                    "auto_decision": v2.auto_decision,
-                    "final_decision": v2.final_decision,
-                    "notes": v2.notes,
-                    "risk_level": v2.risk_level,
-                    "reviewed_by": v2.reviewed_by,
-                    "reviewed_at": v2.reviewed_at.isoformat() if v2.reviewed_at else None
+                    "screening_metadata": {
+                        "id": str(v2.id),
+                        "status": v2.status,
+                        "auto_decision": v2.auto_decision,
+                        "final_decision": v2.final_decision,
+                        "notes": v2.notes,
+                        "risk_level": v2.risk_level,
+                        "screened_at": v2.screened_at.isoformat() if v2.screened_at else None,
+                        "reviewed_by": v2.reviewed_by,
+                        "match_count": v2.match_count
+                    }
                 }
                 pdf_bytes = report_service.generate_entity_report(clear_data)
                 
-                filename = f"Clearance_Certificate_{clear_data['caption'].replace(' ', '_')}.pdf"
+                filename = f"Clearance_Report_{clear_data['caption'].replace(' ', '_')}.pdf"
                 return StreamingResponse(
                     io.BytesIO(pdf_bytes),
                     media_type="application/pdf",
@@ -544,7 +571,7 @@ async def get_screening_report(
                 for res in results:
                     entity_id = res.get("details", {}).get("entity_id")
                     if entity_id:
-                        return await get_entity_report(entity_id, db, current_user)
+                        return await get_entity_report(entity_id=entity_id, screening_id=screening_id, db=db, current_user=current_user)
 
             # If it's a legacy screening but no matches found with entity_id
             # Fallback to generating a clear report if we have info
@@ -563,7 +590,7 @@ async def get_screening_report(
                 "risk_level": "LOW" if s.status == "Clear" else "MEDIUM"
             }
             pdf_bytes = report_service.generate_entity_report(clear_data)
-            filename = f"Clearance_Certificate_{clear_data['caption'].replace(' ', '_')}.pdf"
+            filename = f"Clearance_Report_{clear_data['caption'].replace(' ', '_')}.pdf"
             return StreamingResponse(
                 io.BytesIO(pdf_bytes),
                 media_type="application/pdf",
@@ -578,6 +605,52 @@ async def get_screening_report(
         raise
     except Exception as e:
         print(f"Screening report error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate report")
+
+@router.post("/{screening_id}/monitor")
+async def toggle_monitoring(
+    screening_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Toggles active monitoring for the specific screening query profile.
+    """
+    existing = db.query(models.MonitoredEntity).filter(
+        models.MonitoredEntity.customer_ref == screening_id,
+        models.MonitoredEntity.status == "active"
+    ).first()
+    
+    if existing:
+        existing.status = "inactive"
+        enabled = False
+    else:
+        inactive = db.query(models.MonitoredEntity).filter(
+            models.MonitoredEntity.customer_ref == screening_id,
+        ).first()
+        
+        if inactive:
+            inactive.status = "active"
+            enabled = True
+        else:
+            screening = await get_screening(screening_id, db)
+            query = screening.get("query", {})
+            query_name = query.get("company_name") or f"{query.get('first_name', '')} {query.get('last_name', '')}".strip()
+            
+            new_entity = models.MonitoredEntity(
+                user_id=current_user.username,
+                customer_ref=screening_id,
+                entity_id="none",
+                query_name=query_name or "Unknown Subject",
+                query_details=query,
+                last_risk_level=screening.get("overall_status", "LOW").upper()
+            )
+            db.add(new_entity)
+            enabled = True
+
+    db.commit()
+    return {"message": "Monitoring status updated successfully", "monitoring_enabled": enabled}
+
 @router.post("/{screening_id}/review", response_model=dict)
 async def review_screening(
     screening_id: str,
@@ -702,12 +775,6 @@ async def review_screening(
             "match_id": request.match_id,
             "match_status": request.match_status
         }
-        return {
-            "message": "Review updated successfully", 
-            "status": result.status,
-            "match_id": request.match_id,
-            "match_status": request.match_status
-        }
         
     except ValueError:
         # If not a valid UUID, try legacy Screening model directly
@@ -755,6 +822,100 @@ async def get_screening_history(
             "timestamp": h.AuditLog.timestamp.isoformat()
         } for h in history
     ]
+
+class MatchDecisionRequest(BaseModel):
+    status: str
+    note: Optional[str] = None
+
+@router.post("/{screening_id}/matches/{entity_id}/decision")
+async def update_match_decision(
+    screening_id: str,
+    entity_id: str,
+    req: MatchDecisionRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    try:
+        from sqlalchemy.orm.attributes import flag_modified
+        
+        db_screening = db.query(models.ScreeningResult).filter(models.ScreeningResult.id == screening_id).first()
+        if not db_screening:
+            raise HTTPException(status_code=404, detail="Screening not found")
+
+        matches = db_screening.all_matches or []
+        found = False
+        target_caption = entity_id
+        
+        for m in matches:
+            if m.get('entity_id') == entity_id:
+                m['decision'] = req.status
+                m['decision_note'] = req.note
+                m['decision_author'] = current_user.username
+                m['decision_date'] = datetime.datetime.utcnow().isoformat()
+                target_caption = m.get('caption', entity_id)
+                found = True
+                break
+        
+        if not found:
+            raise HTTPException(status_code=404, detail="Match not found in screening")
+
+        db_screening.all_matches = matches
+        flag_modified(db_screening, "all_matches")
+        
+        # User Action Audit Log
+        log = models.AuditLog(
+            user_id=current_user.username,
+            action="match_decision_updated",
+            resource=f"screening:{screening_id}",
+            success=True,
+            details={
+                "entity_id": entity_id,
+                "caption": target_caption,
+                "new_status": req.status,
+                "note": req.note
+            }
+        )
+        db.add(log)
+        
+        # Auto-Cascade Overall Status
+        has_true_match = any(m.get('decision') == 'True Match' for m in matches)
+        all_false_positives = all(m.get('decision') == 'False Positive' for m in matches)
+        
+        new_status = db_screening.status
+        old_status = db_screening.status
+        
+        if has_true_match:
+            new_status = "Rejected"
+            db_screening.risk_level = "HIGH"
+        elif all_false_positives and len(matches) > 0:
+            new_status = "Clear"
+            db_screening.risk_level = "LOW"
+        else:
+            new_status = "Review"
+
+        if new_status != old_status:
+            db_screening.status = new_status
+            db_screening.final_decision = new_status
+            auto_log = models.AuditLog(
+                user_id=current_user.username,
+                action="status_auto_resolved",
+                resource=f"screening:{screening_id}",
+                success=True,
+                details={
+                    "previous_status": old_status,
+                    "new_status": new_status,
+                    "reason": f"Cascaded automatically (Has True Match: {has_true_match}, All False Positives: {all_false_positives})"
+                }
+            )
+            db.add(auto_log)
+            
+        db.commit()
+        return {"status": "success", "new_overall_status": new_status}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/{screening_id}/summary-report")
 async def get_screening_summary_report(
     screening_id: str,

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, Suspense } from "react";
 import { LoadingSpinner } from "../../../../components/LoadingSpinner";
+import { Modal } from "../../../../components/Modal";
 import { 
   Shield, 
   User, 
@@ -39,7 +40,9 @@ import {
   Link2,
   Eye,
   Settings,
-  Bell
+  Bell,
+  XCircle,
+  X
 } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -100,6 +103,37 @@ const TruncatedList = ({ items, limit = 10, renderItem }: { items: any[], limit?
           Hide
         </button>
       )}
+    </div>
+  );
+};
+
+const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error' | 'info', onClose: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '24px',
+      right: '24px',
+      padding: '16px 24px',
+      borderRadius: '12px',
+      backgroundColor: type === 'success' ? '#065f46' : type === 'error' ? '#991b1b' : '#1e3a8a',
+      color: '#fff',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+      zIndex: 2000,
+      animation: 'slideIn 0.3s ease-out'
+    }}>
+      {type === 'success' ? <CheckCircle2 size={18} /> : type === 'error' ? <XCircle size={18} /> : <Info size={18} />}
+      <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{message}</span>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', opacity: 0.7 }}>
+        <X size={14} />
+      </button>
     </div>
   );
 };
@@ -210,6 +244,15 @@ function EntityDetailContent() {
   const [activeTab, setActiveTab] = useState("overview");
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [monitoringLoading, setMonitoringLoading] = useState(false);
+  const [toasts, setToasts] = useState<any[]>([]);
+
+  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setToasts(prev => [...prev, { id: Date.now(), message, type }]);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -233,12 +276,14 @@ function EntityDetailContent() {
               const screeningResult = await screeningRes.json();
               const match = screeningResult.matches?.find((m: any) => m.entity_id === entityId);
               if (match) setScreeningMatch(match);
+              setIsMonitoring(screeningResult.monitoring_enabled || false);
             }
           } catch (e) { console.warn("Context unavailable:", e); }
+        } else {
+          setIsMonitoring(entityDetails.target || false);
         }
 
         setData(entityDetails);
-        setIsMonitoring(entityDetails.target || false);
         setError(null);
       } catch (err: any) {
         console.error("Fetch error:", err);
@@ -251,14 +296,68 @@ function EntityDetailContent() {
     if (entityId) fetchData();
   }, [entityId, screeningId]);
 
+  const [exportLoading, setExportLoading] = useState(false);
+
+  const handleExportReport = async () => {
+    if (!screeningId) return;
+    try {
+      setExportLoading(true);
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const token = localStorage.getItem("amltab_token");
+      const response = await fetch(`${API_URL}/screen/${screeningId}/report`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error("Failed to generate report");
+      
+      const props = data?.properties || {};
+      const latinName = (props["name"] || []).find((n: any) => typeof n === 'string' && /^[a-zA-Z0-9\s,.\-()'!]*$/.test(n)) || data?.caption || 'Record';
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `AMLTAB_Intelligence_${latinName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (e) {
+      console.error("Export failed", e);
+      addToast("Intelligence report generation failed.", "error");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const toggleMonitoring = async () => {
+    if (!screeningId) {
+      addToast("Monitoring requires an active screening session context.", "info");
+      return;
+    }
+    const token = localStorage.getItem("amltab_token");
+    if (!token) return;
+
     try {
       setMonitoringLoading(true);
-      // Simulated API call - would point to monitoring activation endpoint
-      await new Promise(r => setTimeout(r, 800));
-      setIsMonitoring(!isMonitoring);
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const res = await fetch(`${API_URL}/screen/${screeningId}/monitor`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const result = await res.json();
+        setIsMonitoring(result.monitoring_enabled);
+        addToast(result.monitoring_enabled ? "Active Monitoring Activated" : "Monitoring Paused", "success");
+      } else {
+        addToast("Failed to update monitoring status.", "error");
+      }
     } catch (e) {
       console.error("Monitoring toggle failed", e);
+      addToast("Network failure toggling monitoring.", "error");
     } finally {
       setMonitoringLoading(false);
     }
@@ -371,8 +470,27 @@ function EntityDetailContent() {
             {isMonitoring ? "ACTIVE MONITORING ON" : "START MONITORING"}
           </button>
           
-          <button type="button" className={styles.summaryBtn} style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 24px', fontSize: '0.75rem', fontWeight: 900 }}>
-            <Download size={14} /> EXPORT INTELLIGENCE
+          <button 
+            type="button" 
+            onClick={handleExportReport}
+            disabled={exportLoading}
+            className={styles.summaryBtn} 
+            style={{ 
+              background: 'var(--primary)', 
+              color: 'white', 
+              border: 'none', 
+              padding: '8px 24px', 
+              fontSize: '0.75rem', 
+              fontWeight: 900,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              cursor: exportLoading ? 'wait' : 'pointer',
+              opacity: exportLoading ? 0.7 : 1
+            }}
+          >
+            {exportLoading ? <Activity size={14} className="pulsate" /> : <Download size={14} />} 
+            {exportLoading ? "PREPARING REPORT..." : "EXPORT INTELLIGENCE"}
           </button>
         </div>
       </div>

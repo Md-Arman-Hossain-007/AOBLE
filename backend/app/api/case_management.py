@@ -250,7 +250,7 @@ def assign_case(
         action="assigned",
         description=f"Case assigned to {assignment_data.assigned_to}",
         performed_by=current_user.username,
-        metadata={"assigned_to": assignment_data.assigned_to},
+        event_data={"assigned_to": assignment_data.assigned_to},
         created_at=datetime.utcnow()
     )
     db.add(history)
@@ -295,12 +295,12 @@ def update_case_status(
         action="status_changed",
         description=f"Status changed from {old_status} to {status_data.status}",
         performed_by=current_user.username,
-        metadata={
-            "old_status": old_status,
-            "new_status": status_data.status,
-            "resolution_notes": status_data.resolution_notes,
-            "escalation_reason": status_data.escalation_reason
-        },
+        event_data={
+    "old_status": old_status,
+    "new_status": status_data.status,
+    "resolution_notes": status_data.resolution_notes,
+    "escalation_reason": status_data.escalation_reason
+},
         created_at=datetime.utcnow()
     )
     db.add(history)
@@ -341,7 +341,7 @@ def add_case_note(
         action="note_added",
         description=f"Note added by {current_user.username}",
         performed_by=current_user.username,
-        metadata={"note_id": note.id, "note_type": note.note_type},
+        event_data={"note_id": note.id, "note_type": note.note_type},
         created_at=datetime.utcnow()
     )
     db.add(history)
@@ -415,11 +415,11 @@ def complete_workflow_step(
         action="workflow_step_completed",
         description=f"Workflow step '{step.step_name}' completed",
         performed_by=current_user.username,
-        metadata={
-            "step_id": step_id,
-            "step_name": step.step_name,
-            "completion_notes": completion_data.completion_notes
-        },
+        event_data={
+    "step_id": step_id,
+    "step_name": step.step_name,
+    "completion_notes": completion_data.completion_notes
+},
         created_at=datetime.utcnow()
     )
     db.add(history)
@@ -613,7 +613,7 @@ def assign_workflow(
         action="workflow_assigned",
         description=f"Workflow '{workflow.name}' assigned to case",
         performed_by=current_user.username,
-        metadata={"workflow_id": workflow.id, "workflow_name": workflow.name},
+        event_data={"workflow_id": workflow.id, "workflow_name": workflow.name},
         created_at=datetime.utcnow()
     )
     db.add(history)

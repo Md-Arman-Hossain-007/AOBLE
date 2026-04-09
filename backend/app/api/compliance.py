@@ -21,7 +21,7 @@ def get_compliance_settings(
 ):
     
     # Settings are unique to the organization
-    settings = db.query(models.ComplianceSettings).filter(models.ComplianceSettings.org_id == current_user.org_id).first()
+    settings = db.query(models.ComplianceSettings).filter(models.ComplianceSettings.org_id== current_user.org_id).first()
     if not settings:
         settings = models.ComplianceSettings(org_id=current_user.org_id)
         db.add(settings)
@@ -36,7 +36,7 @@ def update_compliance_settings(
     current_user: models.User = Depends(RoleChecker(["Compliance Officer", "Admin"]))
 ):
     
-    settings = db.query(models.ComplianceSettings).filter(models.ComplianceSettings.org_id == current_user.org_id).first()
+    settings = db.query(models.ComplianceSettings).filter(models.ComplianceSettings.org_id== current_user.org_id).first()
     if not settings:
         settings = models.ComplianceSettings(org_id=current_user.org_id)
         db.add(settings)
@@ -61,7 +61,7 @@ def get_screening_results(
 ):
     query = db.query(ScreeningResult).join(
         models.User, models.User.username == ScreeningResult.screened_by
-    ).filter(models.User.org_id == current_user.org_id)
+    ).filter(models.User.org_id== current_user.org_id)
     
     if status:
         query = query.filter(ScreeningResult.status == status)
@@ -91,7 +91,7 @@ def update_screening_decision(
     result.final_decision = obj_in.decision
     result.status = obj_in.decision if obj_in.decision != "false_positive" else "cleared"
     result.reviewed_by = current_user.username
-    result.reviewed_at = models.datetime.datetime.utcnow()
+    result.reviewed_at = datetime.datetime.utcnow()
     result.notes = obj_in.notes
     
     # Optional logic: If marked as False Positive, we can whitelist the top match
@@ -180,6 +180,7 @@ async def toggle_monitoring(
 
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid result ID format")
+
 @router.get("/results/{result_id}/ai-insights", response_model=List[schemas.AIInsightResponse])
 async def get_ai_insights(
     result_id: str,
@@ -214,7 +215,7 @@ async def get_ai_insights(
                 confidence=insight_data.confidence,
                 explanation=insight_data.explanation,
                 recommendations=insight_data.recommendations,
-                metadata=insight_data.metadata
+                insight_metadata=insight_data.metadata
             )
             db.add(db_insight)
             insights.append(db_insight)
@@ -238,7 +239,7 @@ def get_compliance_monitoring_alerts(
         models.MonitoredEntity, models.MonitoredEntity.id == models.MonitoringAlert.monitored_entity_id
     ).join(
         models.User, models.User.username == models.MonitoredEntity.user_id
-    ).filter(models.User.org_id == current_user.org_id)
+    ).filter(models.User.org_id== current_user.org_id)
     
     if unread_only:
         query = query.filter(models.MonitoringAlert.is_read == False)

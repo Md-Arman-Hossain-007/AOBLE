@@ -34,12 +34,18 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import styles from "./modern-detail.module.css";
 import { LoadingSpinner } from "../../../components/LoadingSpinner";
+import { Modal } from "../../../components/Modal";
 
 // --- Types ---
 interface Match {
   id?: string;
   entity_id?: string;
   status?: string;
+  // Per-match analyst decision fields (populated by the backend)
+  decision?: string;          // 'True Match' | 'False Positive'
+  decision_note?: string;     // Analyst's justification note
+  decision_author?: string;   // Username of the reviewer
+  decision_date?: string;     // ISO timestamp of the decision
   name: string;
   match_score: number;
   match_type: string;
@@ -127,8 +133,17 @@ export default function ScreeningDetailPage() {
   const [decision, setDecision] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
+  const [togglingMonitoring, setTogglingMonitoring] = useState(false);
   const [toasts, setToasts] = useState<any[]>([]);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingMatchUpdate, setPendingMatchUpdate] = useState<{
+    entityId: string;
+    status: string;
+    name: string;
+  } | null>(null);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setToasts(prev => [...prev, { id: Date.now(), message, type }]);
@@ -150,6 +165,108 @@ export default function ScreeningDetailPage() {
   const handleDeepDive = (entityId: string) => {
     setIsNavigating(true);
     router.push(`/screenings/entity/${entityId}?sid=${id}`);
+  };
+
+  const handleToggleMonitoring = async () => {
+    const token = localStorage.getItem("amltab_token");
+    if (!token) return;
+
+    try {
+      setTogglingMonitoring(true);
+      const res = await fetch(`${API_URL}/screen/${id}/monitor`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const result = await res.json();
+        // Optimistically update the UI state
+        setData(prev => prev ? { ...prev, monitoring_enabled: result.monitoring_enabled } : prev);
+        addToast(result.monitoring_enabled ? "Customer Profile Active Monitoring Enabled!" : "Monitoring Deactivated.", "success");
+      } else {
+        addToast("Failed to toggle monitoring status.", "error");
+      }
+    } catch (err) {
+      addToast("Network error toggling monitoring.", "error");
+    } finally {
+      setTogglingMonitoring(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    const token = localStorage.getItem("amltab_token");
+    try {
+      addToast("Generating report, this may take a moment...", "info");
+      const res = await fetch(`${API_URL}/screen/${id}/report`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        
+        let filename = `AML_Report_${id}.pdf`;
+        const disposition = res.headers.get("Content-Disposition");
+        if (disposition && disposition.indexOf("filename=") !== -1) {
+          const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+          const matches = filenameRegex.exec(disposition);
+          if (matches != null && matches[1]) { 
+            filename = matches[1].replace(/['"]/g, '');
+          }
+        }
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        addToast("Report downloaded successfully!", "success");
+      } else {
+        addToast("Failed to download report. It may not be available yet.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Network error downloading report", "error");
+    }
+  };
+
+  const handleDownloadSummaryReport = async () => {
+    const token = localStorage.getItem("amltab_token");
+    try {
+      addToast("Generating executive match summary...", "info");
+      const res = await fetch(`${API_URL}/screen/${id}/summary-report`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        
+        let filename = `Summary_Report_${id}.pdf`;
+        const disposition = res.headers.get("Content-Disposition");
+        if (disposition && disposition.indexOf("filename=") !== -1) {
+          const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+          const matchesRegex = filenameRegex.exec(disposition);
+          if (matchesRegex != null && matchesRegex[1]) { 
+            filename = matchesRegex[1].replace(/['"]/g, '');
+          }
+        }
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        addToast("Match summary downloaded successfully!", "success");
+      } else {
+        addToast("Failed to download summary report.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Network error downloading summary report", "error");
+    }
   };
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -231,35 +348,52 @@ export default function ScreeningDetailPage() {
     }
   };
 
-  const handleMatchStatusUpdate = async (matchIdx: number, entityId: string, matchStatus: string) => {
+  const handleMatchStatusUpdate = (matchIdx: number, entityId: string, matchStatus: string) => {
+    const match = data?.matches.find(m => m.entity_id === entityId);
+    setPendingMatchUpdate({
+      entityId,
+      status: matchStatus,
+      name: match?.name || "this candidate"
+    });
+    setIsModalOpen(true);
+  };
+
+  const confirmMatchStatusUpdate = async (note: string) => {
+    if (!pendingMatchUpdate) return;
+    
     const token = localStorage.getItem("amltab_token");
     if (!token) return;
 
+    const mappedStatus = pendingMatchUpdate.status === 'matched' ? 'True Match' : 'False Positive';
+    setIsModalOpen(false); // Close immediately for responsiveness
+
     try {
       setSubmitting(true);
-      const res = await fetch(`${API_URL}/screen/${id}/review`, {
+      const res = await fetch(`${API_URL}/screen/${id}/matches/${pendingMatchUpdate.entityId}/decision`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          match_id: entityId,
-          match_idx: matchIdx,
-          match_status: matchStatus,
-          decision: "in_review"
+          status: mappedStatus,
+          note: note
         })
       });
 
       if (res.ok) {
-        addToast(`Match marked as ${matchStatus.replace('_', ' ')}`, "success");
+        addToast(`Match successfully formally designated as ${mappedStatus}`, "success");
         fetchDetail();
         fetchHistory();
+      } else {
+        const errorData = await res.json();
+        addToast(`Failed: ${errorData.detail || 'System error'}`, "error");
       }
     } catch (err) {
-      addToast("Failed to update match status", "error");
+      addToast("Network failure updating match status", "error");
     } finally {
       setSubmitting(false);
+      setPendingMatchUpdate(null);
     }
   };
 
@@ -351,8 +485,39 @@ export default function ScreeningDetailPage() {
           </div>
         </div>
         <div className={styles.actions}>
-          <button className={styles.iconBtn}><Download size={16} /> Detail Report</button>
-          <button className={`${styles.iconBtn} ${styles.primaryIconBtn}`}><Activity size={16} /> Monitoring</button>
+          {data.matches && data.matches.length > 0 ? (
+            <button 
+              className={styles.iconBtn} 
+              onClick={handleDownloadSummaryReport}
+              style={{ background: 'var(--primary)', color: 'white', border: '1px solid var(--primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+            >
+               <FileText size={16} /> Summary Report 
+            </button>
+          ) : (
+            <button 
+              className={styles.iconBtn} 
+              onClick={handleDownloadReport}
+              style={{ background: '#10b981', color: 'white', border: '1px solid #10b981', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)' }}
+            >
+              <Download size={16} /> Clearance Report
+            </button>
+          )}
+          
+          <button 
+            className={`${styles.iconBtn} ${data.monitoring_enabled ? styles.monitoringActiveBtn : styles.primaryIconBtn}`}
+            onClick={handleToggleMonitoring}
+            style={data.monitoring_enabled ? { background: '#10b981', color: 'white', borderColor: '#10b981' } : {}}
+            disabled={togglingMonitoring}
+          >
+            {togglingMonitoring ? (
+              <Activity size={16} className="spin-animation" />
+            ) : data.monitoring_enabled ? (
+              <Check size={16} /> 
+            ) : (
+              <Activity size={16} /> 
+            )}
+            {data.monitoring_enabled ? "Monitoring Active" : "Enable Monitoring"}
+          </button>
         </div>
       </header>
 
@@ -568,15 +733,27 @@ export default function ScreeningDetailPage() {
                     </div>
                   </div>
                   <div className={styles.matchFooter}>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                      <button
-                        onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched")}
-                        className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${match.status === 'matched' ? styles.confirmMatchBtnActive : ''}`}
-                      >Confirm Match</button>
-                      <button
-                        onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive")}
-                        className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${match.status === 'false_positive' ? styles.falsePositiveBtnActive : ''}`}
-                      >Mark False Positive</button>
+                    <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '16px' }}>
+                      <div style={{ display: 'flex', gap: '12px' }}>
+                        <button
+                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched")}
+                          className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${match.decision === 'True Match' || match.status === 'matched' ? styles.confirmMatchBtnActive : ''}`}
+                        >
+                          <CheckCircle2 size={14} /> True Match
+                        </button>
+                        <button
+                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive")}
+                          className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${match.decision === 'False Positive' || match.status === 'false_positive' ? styles.falsePositiveBtnActive : ''}`}
+                        >
+                          <XCircle size={14} /> False Positive
+                        </button>
+                      </div>
+                      {(match.decision === 'True Match' || match.decision === 'False Positive') && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--secondary)' }}>
+                           <span style={{ fontWeight: 600, color: match.decision === 'True Match' ? '#f43f5e' : '#10b981' }}>{match.decision}</span> 
+                           {match.decision_author && <span> by {match.decision_author}</span>}
+                        </div>
+                      )}
                     </div>
                     <button 
                       onClick={() => handleDeepDive(match.entity_id || "")} 
@@ -592,6 +769,120 @@ export default function ScreeningDetailPage() {
           </div>
         </section>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onConfirm={confirmMatchStatusUpdate}
+        title={pendingMatchUpdate?.status === 'matched' ? "Confirm True Match" : "Exclude Candidate"}
+        message={`You are about to mark ${pendingMatchUpdate?.name} as a ${pendingMatchUpdate?.status === 'matched' ? "confirmed True Match" : "False Positive"}. This action will be recorded in the audit trail.`}
+        confirmLabel={pendingMatchUpdate?.status === 'matched' ? "Confirm Match" : "Mark False Positive"}
+        confirmVariant={pendingMatchUpdate?.status === 'matched' ? "danger" : "success"}
+        placeholder="Provide justification for this decision (e.g., matching DOB, different nationality)..."
+      />
+
+      {/* ─── Investigation Audit History ─────────────────────────────────────── */}
+      <section style={{ marginTop: '48px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '16px' }}>
+          <Clock size={20} style={{ color: 'var(--primary)' }} />
+          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, letterSpacing: '0.02em' }}>Investigation Audit History</h2>
+          <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--secondary)' }}>{history.length} event{history.length !== 1 ? 's' : ''} recorded</span>
+        </div>
+
+        {historyLoading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {[1,2,3].map(i => (
+              <div key={i} className="skeleton" style={{ height: '64px', borderRadius: '12px', opacity: 1 - i * 0.2 }} />
+            ))}
+          </div>
+        ) : history.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px', color: 'var(--secondary)', fontSize: '0.875rem', background: 'rgba(255,255,255,0.01)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
+            <MessageSquare size={32} style={{ opacity: 0.3, marginBottom: '12px', display: 'block', margin: '0 auto 12px' }} />
+            No audit events recorded yet. Actions on matches will appear here.
+          </div>
+        ) : (
+          <div style={{ position: 'relative', paddingLeft: '32px' }}>
+            {/* vertical timeline line */}
+            <div style={{ position: 'absolute', left: '11px', top: '8px', bottom: '8px', width: '2px', background: 'var(--border)', borderRadius: '2px' }} />
+
+            {history.map((h, hi) => {
+              const isSystemEvent  = h.user_id === 'System' || h.action === 'status_auto_resolved';
+              const isMatchDecision = h.action === 'match_decision_updated';
+              const newStatus      = h.details?.new_status || h.details?.new_status;
+              const caption        = h.details?.caption;
+              const note           = h.details?.note;
+              const entityId       = h.details?.entity_id;
+
+              const dotColor = isSystemEvent
+                ? (newStatus === 'Clear' ? '#10b981' : newStatus === 'Rejected' ? '#f43f5e' : '#f59e0b')
+                : (h.details?.new_status === 'True Match' ? '#f43f5e' : h.details?.new_status === 'False Positive' ? '#10b981' : 'var(--primary)');
+
+              const actionLabel = isSystemEvent
+                ? `System auto-resolved overall status → ${newStatus}`
+                : isMatchDecision
+                  ? `Marked "${caption || entityId}" as ${h.details?.new_status}`
+                  : h.action.replace(/_/g, ' ');
+
+              return (
+                <div key={hi} style={{ position: 'relative', display: 'flex', gap: '20px', paddingBottom: hi < history.length - 1 ? '28px' : '0' }}>
+                  {/* dot */}
+                  <div style={{
+                    position: 'absolute', left: '-27px', top: '6px',
+                    width: '14px', height: '14px', borderRadius: '50%',
+                    background: dotColor,
+                    border: '2px solid var(--surface)',
+                    boxShadow: `0 0 8px ${dotColor}60`,
+                    flexShrink: 0, zIndex: 1
+                  }} />
+
+                  {/* card */}
+                  <div style={{
+                    flex: 1, background: 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${isSystemEvent ? dotColor + '40' : 'var(--border)'}`,
+                    borderLeft: `3px solid ${dotColor}`,
+                    borderRadius: '12px', padding: '16px 20px',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)' }}>{actionLabel}</span>
+                        {isSystemEvent && (
+                          <span style={{ marginLeft: '10px', fontSize: '0.65rem', background: '#f59e0b20', color: '#f59e0b', border: '1px solid #f59e0b60', padding: '2px 8px', borderRadius: '4px', fontWeight: 900 }}>SYSTEM</span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--secondary)', whiteSpace: 'nowrap' }}>
+                        {new Date(h.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '0.8rem', color: 'var(--secondary)' }}>
+                      {!isSystemEvent && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <User size={12} /> {h.user_id} {h.role && `· ${h.role}`}
+                        </span>
+                      )}
+                      {isMatchDecision && entityId && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'monospace', fontSize: '0.7rem', color: 'var(--primary)' }}>
+                          ID: {entityId}
+                        </span>
+                      )}
+                      {isSystemEvent && h.details?.reason && (
+                        <span style={{ color: 'var(--secondary)', fontStyle: 'italic' }}>{h.details.reason}</span>
+                      )}
+                    </div>
+
+                    {note && (
+                      <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--foreground)', borderLeft: '2px solid var(--primary)', fontStyle: 'italic' }}>
+                        <MessageSquare size={12} style={{ marginRight: '6px', verticalAlign: 'middle', color: 'var(--primary)' }} />
+                        "{note}"
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {toasts.map(t => <Toast key={t.id} message={t.message} type={t.type} onClose={() => removeToast(t.id)} />)}
     </div>

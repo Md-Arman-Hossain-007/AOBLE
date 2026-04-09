@@ -8,15 +8,7 @@ import os
 def generate_uuid():
     return str(uuid.uuid4())
 
-# Use JSON for SQLite compatibility
-USE_SQLITE = os.getenv("USE_SQLITE", "true").lower() == "true"
-
-if USE_SQLITE:
-    JSONB = JSON
-    ARRAY = JSON
-    PGUUID = String
-else:
-    from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB, ARRAY
 
 # Multi-Tenant Models
 
