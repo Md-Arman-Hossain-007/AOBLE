@@ -265,11 +265,17 @@ function EntityDetailContent() {
           "Content-Type": "application/json"
         };
 
-        const entityRes = await fetch(`${API_URL}/screen/entities/${entityId}`, { headers });
-        if (!entityRes.ok) throw new Error("Entity retrieval failed");
+        const entityRes = await fetch(`${API_URL}/screen/entities/${entityId}${screeningId ? `?sid=${screeningId}` : ''}`, { headers });
+        if (!entityRes.ok) {
+          const errorData = await entityRes.json().catch(() => ({}));
+          throw new Error(errorData.detail || "Entity retrieval failed");
+        }
         const entityDetails = await entityRes.json();
-        
-        if (screeningId) {
+
+        // Use match context from backend if available
+        if (entityDetails.match_context) {
+          setScreeningMatch(entityDetails.match_context);
+        } else if (screeningId) {
           try {
             const screeningRes = await fetch(`${API_URL}/screen/${screeningId}`, { headers });
             if (screeningRes.ok) {

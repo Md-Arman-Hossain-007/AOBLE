@@ -152,10 +152,15 @@ async def get_entity_report(
         raise HTTPException(status_code=500, detail="Internal server error during report generation")
 
 @router.get("/entities/{entity_id:path}", response_model=dict)
-async def get_entity_details(entity_id: str, current_user: models.User = Depends(get_current_active_user)):
+async def get_entity_details(
+    entity_id: str,
+    sid: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user)
+):
     try:
         details: Dict[str, Any] = await screening_service.get_entity_details(entity_id)
-        
+
         # Ensure name consistency with screening results
         # Match list uses props.get("name", [None])[0] or props.get("caption")
         if "properties" in details:
@@ -163,7 +168,40 @@ async def get_entity_details(entity_id: str, current_user: models.User = Depends
             name = props.get("name", [None])[0]
             if name:
                 details["caption"] = name
-        
+
+        # Add screening context if sid is provided
+        if sid:
+            try:
+                uuid_val = uuid.UUID(sid)
+                screening_result = db.query(models.ScreeningResult).filter(
+                    models.ScreeningResult.id == uuid_val
+                ).first()
+                if screening_result:
+                    details["screening_context"] = {
+                        "id": str(screening_result.id),
+                        "status": screening_result.status,
+                        "risk_level": screening_result.risk_level,
+                        "screened_at": screening_result.screened_at.isoformat() if screening_result.screened_at else None,
+                        "customer_ref": screening_result.customer_ref,
+                        "notes": screening_result.notes
+                    }
+                    
+                    # Find the match for this entity in the screening
+                    matches = screening_result.all_matches or []
+                    entity_match = next((m for m in matches if m.get("entity_id") == entity_id), None)
+                    if entity_match:
+                        details["match_context"] = {
+                            "score": entity_match.get("score"),
+                            "match_score": entity_match.get("score", 0) * 100,
+                            "decision": entity_match.get("decision"),
+                            "decision_note": entity_match.get("decision_note"),
+                            "decision_author": entity_match.get("decision_author"),
+                            "decision_date": entity_match.get("decision_date"),
+                            "status": entity_match.get("status")
+                        }
+            except Exception as e:
+                print(f"DEBUG: Error adding screening context: {e}")
+
         return details
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
