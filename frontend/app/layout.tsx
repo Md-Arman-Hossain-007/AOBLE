@@ -32,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${geistSans.variable} ${geistMono.variable}`}>
+      <body 
+        className={`${inter.variable} ${geistSans.variable} ${geistMono.variable}`}
+        suppressHydrationWarning
+      >
         <ThemeProvider>
           {children}
         </ThemeProvider>

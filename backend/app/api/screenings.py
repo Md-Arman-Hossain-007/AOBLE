@@ -837,10 +837,31 @@ async def update_match_decision(
 ):
     try:
         from sqlalchemy.orm.attributes import flag_modified
-        
+
+        # First try to find by ScreeningResult.id (UUID)
         db_screening = db.query(models.ScreeningResult).filter(models.ScreeningResult.id == screening_id).first()
+        
+        # If not found, try to find by Screening.id (string) and get the ScreeningResult
         if not db_screening:
-            raise HTTPException(status_code=404, detail="Screening not found")
+            screening = db.query(models.Screening).filter(models.Screening.id == screening_id).first()
+            if screening:
+                # Get all ScreeningResults for this screening and find one with matching entity
+                results = db.query(models.ScreeningResult).filter(
+                    models.ScreeningResult.screening_id == screening_id
+                ).all()
+                
+                # Find the result that contains this entity_id in its matches
+                for result in results:
+                    matches = result.all_matches or []
+                    for m in matches:
+                        if m.get('entity_id') == entity_id:
+                            db_screening = result
+                            break
+                    if db_screening:
+                        break
+            
+            if not db_screening:
+                raise HTTPException(status_code=404, detail="Screening or match not found")
 
         matches = db_screening.all_matches or []
         found = False

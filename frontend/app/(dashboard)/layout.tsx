@@ -3,13 +3,13 @@
 import styles from "./layout.module.css";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { 
-  ShieldCheck, 
-  LayoutDashboard, 
-  UserSearch, 
-  FileText, 
-  Settings, 
-  Search, 
+import {
+  ShieldCheck,
+  LayoutDashboard,
+  UserSearch,
+  FileText,
+  Settings,
+  Search,
   Bell,
   Menu,
   X,
@@ -18,17 +18,15 @@ import {
   Inbox,
   ShieldAlert,
   Activity,
-  Building2,
-  User,
   History,
   BookOpen,
-  ChevronDown,
-  ChevronRight,
-  List
+  Building2,
+  User
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { NotificationModal } from "../components/NotificationModal";
 import { useRouter } from "next/navigation";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 
@@ -42,12 +40,14 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<{ username?: string; full_name?: string; role?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
 
   useEffect(() => {
     // Get user data from localStorage
     const userData = localStorage.getItem("amltab_user");
     const token = localStorage.getItem("amltab_token");
-    
+
     if (userData && token) {
       try {
         setUser(JSON.parse(userData));
@@ -63,6 +63,31 @@ export default function DashboardLayout({
     setIsLoading(false);
   }, [router]);
 
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      const token = localStorage.getItem("amltab_token");
+      if (!token) return;
+
+      try {
+        const res = await fetch(`/api/notifications/count`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.unread_count);
+        }
+      } catch (err) {
+        console.error("Failed to fetch unread count:", err);
+      }
+    };
+
+    fetchUnreadCount();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("amltab_token");
     localStorage.removeItem("amltab_refresh_token");
@@ -70,25 +95,12 @@ export default function DashboardLayout({
     router.push("/signin");
   };
 
-  const [historyOpen, setHistoryOpen] = useState(false);
-
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/screen", label: "Screening", icon: UserSearch },
     { href: "/bulk", label: "Bulk Screening", icon: Layers },
     { href: "/cases", label: "Compliance & Case Management", icon: Inbox },
-    { 
-      label: "History & Audit", 
-      icon: History, 
-      isParent: true,
-      isOpen: historyOpen,
-      setOpen: setHistoryOpen,
-      subItems: [
-        { href: "/history/all", label: "All Histories", icon: List },
-        { href: "/history/individual", label: "Individual", icon: User },
-        { href: "/history/entity", label: "Entity", icon: Building2 },
-      ]
-    },
+    { href: "/history/all", label: "History & Audit", icon: History },
     { href: "/api-docs", label: "API Documentation", icon: BookOpen },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
@@ -188,47 +200,16 @@ export default function DashboardLayout({
         <nav className={styles.nav}>
           {navItems.map((item: any) => {
             const Icon = item.icon;
-            const isActive = item.href ? (pathname === item.href || (item.href === '/dashboard' && pathname === '/')) : pathname.startsWith('/history');
-            
-            if (item.isParent) {
-              return (
-                <div key={item.label} className={styles.navGroup}>
-                  <button 
-                    onClick={() => item.setOpen(!item.isOpen)}
-                    className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
-                    style={{ width: '100%', justifyContent: 'flex-start' }}
-                  >
-                    <Icon size={20} />
-                    <span style={{ flex: 1, textAlign: 'left' }}>{item.label}</span>
-                    {item.isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </button>
-                  
-                  {item.isOpen && (
-                    <div className={styles.subNav}>
-                      {item.subItems.map((sub: any) => {
-                        const SubIcon = sub.icon;
-                        const isSubActive = pathname === sub.href;
-                        return (
-                          <Link 
-                            key={sub.href}
-                            href={sub.href}
-                            className={`${styles.subNavItem} ${isSubActive ? styles.subNavItemActive : ""}`}
-                            onClick={() => setSidebarOpen(false)}
-                          >
-                            <SubIcon size={16} />
-                            {sub.label}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            }
+            // Check if current path matches the nav item
+            const isActive = item.href 
+              ? (pathname === item.href || 
+                 (item.href === '/dashboard' && pathname === '/') ||
+                 (item.href === '/history/all' && pathname.startsWith('/history')))
+              : false;
 
             return (
-              <Link 
-                key={item.href} 
+              <Link
+                key={item.href}
                 href={item.href}
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={() => setSidebarOpen(false)}
@@ -308,11 +289,17 @@ export default function DashboardLayout({
 
           <div className={styles.headerRight}>
             <ThemeToggle />
-            <button className={styles.iconBtn}>
+            <button 
+              className={styles.iconBtn} 
+              onClick={() => setNotificationModalOpen(true)}
+              title="Notifications"
+            >
               <Bell size={20} />
-              <span className={styles.badge}></span>
+              {unreadCount > 0 && (
+                <span className={styles.badge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+              )}
             </button>
-            
+
             <div className={styles.profileInfo}>
               <div className={styles.avatar}>{getInitials()}</div>
               <div className={styles.profileText}>
@@ -321,6 +308,14 @@ export default function DashboardLayout({
               </div>
             </div>
           </div>
+
+          {/* Notification Modal */}
+          <NotificationModal
+            isOpen={notificationModalOpen}
+            onClose={() => setNotificationModalOpen(false)}
+            initialUnreadCount={unreadCount}
+            onUnreadCountChange={setUnreadCount}
+          />
         </header>
 
         {/* Page Content */}

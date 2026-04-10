@@ -349,6 +349,12 @@ export default function ScreeningDetailPage() {
   };
 
   const handleMatchStatusUpdate = (matchIdx: number, entityId: string, matchStatus: string) => {
+    // Validate entity_id before proceeding
+    if (!entityId) {
+      addToast("Error: Cannot update match - missing entity ID", "error");
+      return;
+    }
+
     const match = data?.matches.find(m => m.entity_id === entityId);
     setPendingMatchUpdate({
       entityId,
@@ -360,9 +366,17 @@ export default function ScreeningDetailPage() {
 
   const confirmMatchStatusUpdate = async (note: string) => {
     if (!pendingMatchUpdate) return;
-    
+
     const token = localStorage.getItem("amltab_token");
     if (!token) return;
+
+    // Validate that entity_id is present
+    if (!pendingMatchUpdate.entityId) {
+      addToast("Error: Missing entity ID for this match", "error");
+      setIsModalOpen(false);
+      setPendingMatchUpdate(null);
+      return;
+    }
 
     const mappedStatus = pendingMatchUpdate.status === 'matched' ? 'True Match' : 'False Positive';
     setIsModalOpen(false); // Close immediately for responsiveness
@@ -736,14 +750,30 @@ export default function ScreeningDetailPage() {
                     <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '16px' }}>
                       <div style={{ display: 'flex', gap: '12px' }}>
                         <button
-                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched")}
+                          onClick={() => {
+                            if (!match.entity_id) {
+                              addToast("Error: Cannot update match - missing entity ID", "error");
+                              return;
+                            }
+                            handleMatchStatusUpdate(idx, match.entity_id, "matched");
+                          }}
                           className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${match.decision === 'True Match' || match.status === 'matched' ? styles.confirmMatchBtnActive : ''}`}
+                          disabled={!match.entity_id}
+                          title={!match.entity_id ? "Missing entity ID" : "Mark as True Match"}
                         >
                           <CheckCircle2 size={14} /> True Match
                         </button>
                         <button
-                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive")}
+                          onClick={() => {
+                            if (!match.entity_id) {
+                              addToast("Error: Cannot update match - missing entity ID", "error");
+                              return;
+                            }
+                            handleMatchStatusUpdate(idx, match.entity_id, "false_positive");
+                          }}
                           className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${match.decision === 'False Positive' || match.status === 'false_positive' ? styles.falsePositiveBtnActive : ''}`}
+                          disabled={!match.entity_id}
+                          title={!match.entity_id ? "Missing entity ID" : "Mark as False Positive"}
                         >
                           <XCircle size={14} /> False Positive
                         </button>

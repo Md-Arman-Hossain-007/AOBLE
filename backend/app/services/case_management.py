@@ -501,7 +501,7 @@ class CaseManagementService:
         self.workflow_templates[workflow.workflow_id] = workflow
     
     def get_case_analytics(
-        self, 
+        self,
         org_id: str,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
@@ -510,37 +510,37 @@ class CaseManagementService:
         
         start_date = start_date or (datetime.utcnow() - timedelta(days=30))
         end_date = end_date or datetime.utcnow()
-        
+
         # Get cases in date range
         cases = self.db.query(Case).filter(
             Case.org_id == org_id,
             Case.created_at >= start_date,
             Case.created_at <= end_date
         ).all()
-        
+
         # Calculate metrics
         total_cases = len(cases)
         resolved_cases = len([c for c in cases if c.status == CaseStatus.RESOLVED.value])
         pending_cases = len([c for c in cases if c.status in [CaseStatus.PENDING.value, CaseStatus.UNDER_REVIEW.value]])
         escalated_cases = len([c for c in cases if c.status == CaseStatus.ESCALATED.value])
-        
+
         # Average resolution time
         resolution_times = []
         for case in cases:
             if case.resolved_at and case.created_at:
                 time_diff = case.resolved_at - case.created_at
                 resolution_times.append(time_diff.total_seconds() / 3600)  # hours
-        
+
         avg_resolution_time = sum(resolution_times) / len(resolution_times) if resolution_times else 0
-        
+
         # Case distribution by type and priority
         case_types = {}
         priorities = {}
-        
+
         for case in cases:
             case_types[case.case_type] = case_types.get(case.case_type, 0) + 1
             priorities[case.priority] = priorities.get(case.priority, 0) + 1
-        
+
         return {
             "total_cases": total_cases,
             "resolved_cases": resolved_cases,
@@ -551,6 +551,116 @@ class CaseManagementService:
             "case_types": case_types,
             "priorities": priorities,
             "escalation_rate": (escalated_cases / total_cases * 100) if total_cases > 0 else 0
+        }
+
+    def get_case_stats(self, org_id: str) -> Dict[str, Any]:
+        """Get comprehensive case management statistics for dashboard"""
+        
+        # Basic counts
+        total_cases = self.db.query(Case).filter(Case.org_id == org_id).count()
+        pending_cases = self.db.query(Case).filter(
+            Case.org_id == org_id,
+            Case.status.in_(['pending', 'under_review'])
+        ).count()
+        resolved_cases = self.db.query(Case).filter(
+            Case.org_id == org_id,
+            Case.status == 'resolved'
+        ).count()
+        escalated_cases = self.db.query(Case).filter(
+            Case.org_id == org_id,
+            Case.status == 'escalated'
+        ).count()
+
+        # SLA metrics
+        now = datetime.utcnow()
+        sla_breached = self.db.query(Case).filter(
+            Case.org_id == org_id,
+            Case.due_date < now,
+            Case.status.in_(['pending', 'under_review', 'escalated'])
+        ).count()
+        
+        sla_warning = self.db.query(Case).filter(
+            Case.org_id == org_id,
+            Case.due_date >= now,
+            Case.due_date <= now + timedelta(hours=24),
+            Case.status.in_(['pending', 'under_review', 'escalated'])
+        ).count()
+
+        # Average resolution time (for resolved cases in last 30 days)
+        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        resolved_in_period = self.db.query(Case).filter(
+            Case.org_id == org_id,
+            Case.status == 'resolved',
+            Case.resolved_at >= thirty_days_ago
+        ).all()
+
+        if resolved_in_period:
+            total_hours = sum([
+                (case.resolved_at - case.created_at).total_seconds() / 3600
+                for case in resolved_in_period
+            ])
+            avg_resolution_hours = total_hours / len(resolved_in_period)
+        else:
+            avg_resolution_hours = 0
+
+        # Case distribution by type and priority
+        case_types = {}
+        priorities = {}
+
+        cases = self.db.query(Case).filter(Case.org_id == org_id).all()
+        for case in cases:
+            case_types[case.case_type] = case_types.get(case.case_type, 0) + 1
+            priorities[case.priority] = priorities.get(case.priority, 0) + 1
+
+        # Open cases by assignee
+        open_cases_by_assignee = []
+        assignees = self.db.query(Case.assigned_to).filter(
+            Case.org_id == org_id,
+            Case.status.in_(['pending', 'under_review'])
+        ).distinct().all()
+
+        for assignee in assignees:
+            if assignee[0]:
+                count = self.db.query(Case).filter(
+                    Case.org_id == org_id,
+                    Case.assigned_to == assignee[0],
+                    Case.status.in_(['pending', 'under_review'])
+                ).count()
+                user = self.db.query(User).filter(User.username == assignee[0]).first()
+                open_cases_by_assignee.append({
+                    "username": assignee[0],
+                    "full_name": user.full_name if user else assignee[0],
+                    "case_count": count
+                })
+
+        # Trend data (last 7 days)
+        daily_trend = []
+        for i in range(7):
+            day_start = now - timedelta(days=6-i)
+            day_end = day_start + timedelta(days=1)
+            day_cases = self.db.query(Case).filter(
+                Case.org_id == org_id,
+                Case.created_at >= day_start,
+                Case.created_at < day_end
+            ).count()
+            daily_trend.append({
+                "date": day_start.strftime("%Y-%m-%d"),
+                "count": day_cases
+            })
+
+        return {
+            "total_cases": total_cases,
+            "pending_cases": pending_cases,
+            "resolved_cases": resolved_cases,
+            "escalated_cases": escalated_cases,
+            "sla_breached": sla_breached,
+            "sla_warning": sla_warning,
+            "resolution_rate": (resolved_cases / total_cases * 100) if total_cases > 0 else 0,
+            "avg_resolution_time": round(avg_resolution_hours, 1),
+            "case_types": case_types,
+            "priorities": priorities,
+            "open_cases_by_assignee": open_cases_by_assignee,
+            "daily_trend": daily_trend
         }
     
     # Helper methods
