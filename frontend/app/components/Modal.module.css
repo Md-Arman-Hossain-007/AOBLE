@@ -237,6 +237,22 @@
   box-shadow: var(--shadow-md);
 }
 
+.btnSuccess {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+.btnSuccess:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btnSuccess:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Info Box */
 .infoBox {
   display: flex;
