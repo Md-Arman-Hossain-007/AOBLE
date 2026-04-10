@@ -390,6 +390,24 @@ export default function ScreeningDetailPage() {
     const mappedStatus = pendingMatchUpdate.status === 'matched' ? 'True Match' : 'False Positive';
     setIsModalOpen(false); // Close immediately for responsiveness
 
+    // Optimistically update the UI immediately
+    setData(prev => {
+      if (!prev) return prev;
+      const updatedMatches = prev.matches.map(m => {
+        if (m.entity_id === pendingMatchUpdate.entityId || m.name === pendingMatchUpdate.name) {
+          return {
+            ...m,
+            decision: mappedStatus,
+            decision_note: note,
+            decision_author: 'You',
+            decision_date: new Date().toISOString()
+          };
+        }
+        return m;
+      });
+      return { ...prev, matches: updatedMatches };
+    });
+
     try {
       setSubmitting(true);
       const res = await fetch(`${API_URL}/screen/${id}/matches/${pendingMatchUpdate.entityId}/decision`, {
@@ -406,14 +424,19 @@ export default function ScreeningDetailPage() {
 
       if (res.ok) {
         addToast(`Match successfully formally designated as ${mappedStatus}`, "success");
-        fetchDetail();
+        // Refetch to sync with server data
+        await fetchDetail();
         fetchHistory();
       } else {
         const errorData = await res.json();
         addToast(`Failed: ${errorData.detail || 'System error'}`, "error");
+        // Revert optimistic update on failure - refetch original data
+        await fetchDetail();
       }
     } catch (err) {
       addToast("Network failure updating match status", "error");
+      // Revert optimistic update on error - refetch original data
+      await fetchDetail();
     } finally {
       setSubmitting(false);
       setPendingMatchUpdate(null);
