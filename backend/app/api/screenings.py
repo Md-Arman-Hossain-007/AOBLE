@@ -251,6 +251,11 @@ async def get_screening(screening_id: str, db: Session = Depends(get_db)):
                         # --- FIX: Persist per-match analyst decision status ---
                         "status": m.get("status", "potential"),
                         "entity_id": m.get("entity_id"),
+                        # Decision fields (added after user review)
+                        "decision": m.get("decision"),
+                        "decision_note": m.get("decision_note"),
+                        "decision_author": m.get("decision_author"),
+                        "decision_date": m.get("decision_date"),
                         # Rich identification fields
                         "aliases": m.get("aliases", []),
                         "birth_dates": m.get("birth_dates", []),
