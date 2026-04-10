@@ -837,7 +837,9 @@ async def update_match_decision(
 ):
     try:
         from sqlalchemy.orm.attributes import flag_modified
-        
+        import hashlib
+        import uuid as uuid_module
+
         db_screening = db.query(models.ScreeningResult).filter(models.ScreeningResult.id == screening_id).first()
         if not db_screening:
             raise HTTPException(status_code=404, detail="Screening not found")
@@ -845,7 +847,8 @@ async def update_match_decision(
         matches = db_screening.all_matches or []
         found = False
         target_caption = entity_id
-        
+
+        # First try to match by entity_id
         for m in matches:
             if m.get('entity_id') == entity_id:
                 m['decision'] = req.status
@@ -855,7 +858,46 @@ async def update_match_decision(
                 target_caption = m.get('caption', entity_id)
                 found = True
                 break
-        
+
+        # Fallback: If not found by entity_id, try to match by caption/name
+        # This handles cases where entity_id was empty or generated from caption
+        if not found:
+            for m in matches:
+                caption = m.get('caption', '')
+                # Check if entity_id matches the caption-based ID or is the caption itself
+                if caption and (entity_id == caption or entity_id == f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"):
+                    # Ensure entity_id is set
+                    if not m.get('entity_id'):
+                        m['entity_id'] = f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"
+                    
+                    m['decision'] = req.status
+                    m['decision_note'] = req.note
+                    m['decision_author'] = current_user.username
+                    m['decision_date'] = datetime.datetime.utcnow().isoformat()
+                    target_caption = caption
+                    entity_id = m['entity_id']
+                    found = True
+                    break
+
+        # Final fallback: If still not found and entity_id looks like a caption (not a UUID or match- ID)
+        if not found and not entity_id.startswith('match-') and not entity_id.startswith('Q') and '-' not in entity_id:
+            # Treat entity_id as a caption/name
+            for m in matches:
+                if m.get('caption') == entity_id or m.get('name') == entity_id:
+                    # Generate entity_id if missing
+                    if not m.get('entity_id'):
+                        caption = m.get('caption', entity_id)
+                        m['entity_id'] = f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"
+                    
+                    m['decision'] = req.status
+                    m['decision_note'] = req.note
+                    m['decision_author'] = current_user.username
+                    m['decision_date'] = datetime.datetime.utcnow().isoformat()
+                    target_caption = m.get('caption', entity_id)
+                    entity_id = m['entity_id']
+                    found = True
+                    break
+
         if not found:
             raise HTTPException(status_code=404, detail="Match not found in screening")
 

@@ -204,6 +204,18 @@ async def _call_yente(
 
 def _build_match_result(hit: dict[str, Any], db: Session) -> MatchResult:
     entity_id  = hit.get("id", "")
+    # Fallback: If entity_id is empty, generate one from caption or use a unique identifier
+    if not entity_id:
+        caption = hit.get("caption", "")
+        if caption:
+            # Use caption as identifier (common for Yente fuzzy matches)
+            import hashlib
+            entity_id = f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"
+        else:
+            # Last resort: generate a random ID
+            import uuid
+            entity_id = f"match-{str(uuid.uuid4())[:12]}"
+    
     props      = hit.get("properties", {})
     score      = _calculate_weighted_score(hit)
     datasets   = hit.get("datasets", [])

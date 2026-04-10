@@ -348,10 +348,13 @@ export default function ScreeningDetailPage() {
     }
   };
 
-  const handleMatchStatusUpdate = (matchIdx: number, entityId: string, matchStatus: string) => {
-    const match = data?.matches.find(m => m.entity_id === entityId);
+  const handleMatchStatusUpdate = (matchIdx: number, entityId: string, matchStatus: string, matchName?: string) => {
+    // Use entity_id if available, otherwise use match name as identifier
+    const identifier = entityId || matchName || `match-${matchIdx}`;
+    
+    const match = data?.matches.find(m => m.entity_id === entityId || (m.name === matchName && !m.entity_id));
     setPendingMatchUpdate({
-      entityId,
+      entityId: identifier,
       status: matchStatus,
       name: match?.name || "this candidate"
     });
@@ -736,13 +739,13 @@ export default function ScreeningDetailPage() {
                     <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '16px' }}>
                       <div style={{ display: 'flex', gap: '12px' }}>
                         <button
-                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched")}
+                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched", match.name)}
                           className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${match.decision === 'True Match' || match.status === 'matched' ? styles.confirmMatchBtnActive : ''}`}
                         >
                           <CheckCircle2 size={14} /> True Match
                         </button>
                         <button
-                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive")}
+                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive", match.name)}
                           className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${match.decision === 'False Positive' || match.status === 'false_positive' ? styles.falsePositiveBtnActive : ''}`}
                         >
                           <XCircle size={14} /> False Positive
