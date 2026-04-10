@@ -162,7 +162,13 @@ export default function ScreeningDetailPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleDeepDive = (entityId: string) => {
+  const handleDeepDive = (entityId: string, matchName?: string) => {
+    // Validate entity_id before navigation
+    if (!entityId) {
+      addToast("Error: Cannot open deep dive - entity ID not available for this match", "error");
+      return;
+    }
+    
     setIsNavigating(true);
     router.push(`/screenings/entity/${entityId}?sid=${id}`);
   };
@@ -754,7 +760,7 @@ export default function ScreeningDetailPage() {
                       <div style={{ display: 'flex', gap: '12px' }}>
                         <button
                           onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched", match.name)}
-                          className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${match.decision === 'True Match' || match.status === 'matched' ? styles.confirmMatchBtnActive : ''}`}
+                          className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${(match.decision === 'True Match' || match.status === 'matched' || match.decision === 'matched') ? styles.confirmMatchBtnActive : ''}`}
                           disabled={!match.entity_id}
                           title={!match.entity_id ? "Missing entity ID" : "Mark as True Match"}
                         >
@@ -762,7 +768,7 @@ export default function ScreeningDetailPage() {
                         </button>
                         <button
                           onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive", match.name)}
-                          className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${match.decision === 'False Positive' || match.status === 'false_positive' ? styles.falsePositiveBtnActive : ''}`}
+                          className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${(match.decision === 'False Positive' || match.status === 'false_positive' || match.decision === 'false_positive') ? styles.falsePositiveBtnActive : ''}`}
                           disabled={!match.entity_id}
                           title={!match.entity_id ? "Missing entity ID" : "Mark as False Positive"}
                         >

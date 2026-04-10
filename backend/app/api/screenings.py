@@ -905,11 +905,17 @@ async def update_match_decision(
         matches = db_screening.all_matches or []
         found = False
         target_caption = entity_id
+        
+        # Map status to display-friendly decision names
+        decision_display_names = {
+            'matched': 'True Match',
+            'false_positive': 'False Positive'
+        }
 
         # First try to match by entity_id
         for m in matches:
             if m.get('entity_id') == entity_id:
-                m['decision'] = req.status
+                m['decision'] = decision_display_names.get(req.status, req.status)
                 m['decision_note'] = req.note
                 m['decision_author'] = current_user.username
                 m['decision_date'] = datetime.datetime.utcnow().isoformat()
@@ -927,8 +933,8 @@ async def update_match_decision(
                     # Ensure entity_id is set
                     if not m.get('entity_id'):
                         m['entity_id'] = f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"
-                    
-                    m['decision'] = req.status
+
+                    m['decision'] = decision_display_names.get(req.status, req.status)
                     m['decision_note'] = req.note
                     m['decision_author'] = current_user.username
                     m['decision_date'] = datetime.datetime.utcnow().isoformat()
@@ -946,8 +952,8 @@ async def update_match_decision(
                     if not m.get('entity_id'):
                         caption = m.get('caption', entity_id)
                         m['entity_id'] = f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"
-                    
-                    m['decision'] = req.status
+
+                    m['decision'] = decision_display_names.get(req.status, req.status)
                     m['decision_note'] = req.note
                     m['decision_author'] = current_user.username
                     m['decision_date'] = datetime.datetime.utcnow().isoformat()
