@@ -352,6 +352,12 @@ export default function ScreeningDetailPage() {
     // Use entity_id if available, otherwise use match name as identifier
     const identifier = entityId || matchName || `match-${matchIdx}`;
     
+    // Validate before proceeding
+    if (!identifier) {
+      addToast("Error: Cannot update match - missing entity ID", "error");
+      return;
+    }
+
     const match = data?.matches.find(m => m.entity_id === entityId || (m.name === matchName && !m.entity_id));
     setPendingMatchUpdate({
       entityId: identifier,
@@ -363,9 +369,17 @@ export default function ScreeningDetailPage() {
 
   const confirmMatchStatusUpdate = async (note: string) => {
     if (!pendingMatchUpdate) return;
-    
+
     const token = localStorage.getItem("amltab_token");
     if (!token) return;
+
+    // Validate that entity_id is present
+    if (!pendingMatchUpdate.entityId) {
+      addToast("Error: Missing entity ID for this match", "error");
+      setIsModalOpen(false);
+      setPendingMatchUpdate(null);
+      return;
+    }
 
     const mappedStatus = pendingMatchUpdate.status === 'matched' ? 'True Match' : 'False Positive';
     setIsModalOpen(false); // Close immediately for responsiveness
@@ -741,12 +755,16 @@ export default function ScreeningDetailPage() {
                         <button
                           onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched", match.name)}
                           className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${match.decision === 'True Match' || match.status === 'matched' ? styles.confirmMatchBtnActive : ''}`}
+                          disabled={!match.entity_id}
+                          title={!match.entity_id ? "Missing entity ID" : "Mark as True Match"}
                         >
                           <CheckCircle2 size={14} /> True Match
                         </button>
                         <button
                           onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive", match.name)}
                           className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${match.decision === 'False Positive' || match.status === 'false_positive' ? styles.falsePositiveBtnActive : ''}`}
+                          disabled={!match.entity_id}
+                          title={!match.entity_id ? "Missing entity ID" : "Mark as False Positive"}
                         >
                           <XCircle size={14} /> False Positive
                         </button>

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import uvicorn
 
-from .api import screening_v2, screenings, users, monitoring, auth, stats, admin, compliance, billing, notifications, bulk, transactions, case_management, integrations, analytics, utils
+from .api import screening_v2, screenings, users, monitoring, auth, stats, admin, compliance, billing, notifications, bulk, transactions, case_management, case_management_v2, integrations, analytics, utils, history_audit
 from .db.session import engine, Base
 from .core.config import settings
 
@@ -35,7 +35,7 @@ app.include_router(monitoring.router, prefix=f"{settings.API_V1_STR}/monitoring"
 app.include_router(stats.router, prefix=f"{settings.API_V1_STR}/stats", tags=["Stats"])
 app.include_router(admin.router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
 app.include_router(compliance.router, prefix=f"{settings.API_V1_STR}/compliance", tags=["Compliance"])
-app.include_router(case_management.router, tags=["Case Management"])
+app.include_router(case_management.router, tags=["Case Management"])  # Enhanced v2 routes
 app.include_router(bulk.router)
 app.include_router(billing.router, prefix=f"{settings.API_V1_STR}/billing", tags=["Billing"])
 app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifications", tags=["Notifications"])
@@ -43,6 +43,7 @@ app.include_router(transactions.router)
 app.include_router(integrations.router, prefix=f"{settings.API_V1_STR}/integrations", tags=["Integrations"])
 app.include_router(analytics.router, prefix=f"{settings.API_V1_STR}/analytics", tags=["Analytics"])
 app.include_router(utils.router, prefix=f"{settings.API_V1_STR}/utils", tags=["Utils"])
+app.include_router(history_audit.router, tags=["History & Audit"])
 
 @app.on_event("startup")
 async def startup_event():

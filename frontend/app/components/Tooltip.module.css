@@ -1,0 +1,47 @@
+.tooltipContainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  z-index: 10;
+}
+
+.tooltipIcon {
+  color: var(--secondary);
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  display: inline-block;
+}
+
+.tooltipContainer:hover .tooltipIcon {
+  opacity: 1;
+}
+
+.tooltipBox {
+  position: fixed;
+  padding: 10px 14px;
+  background-color: var(--foreground);
+  color: var(--background);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.5;
+  border-radius: 10px;
+  max-width: 300px;
+  white-space: normal;
+  word-wrap: break-word;
+  z-index: 9999;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: tooltipFadeIn 0.15s ease-out;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

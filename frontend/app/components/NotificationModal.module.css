@@ -1,210 +1,185 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  max-width: 1200px;
-  margin: 0 auto;
+/* Backdrop */
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  animation: fadeIn 0.2s ease-out;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 80px;
+  right: 40px;
+  width: 480px;
+  max-height: calc(100vh - 100px);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .modal {
+    top: 60px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    max-height: calc(100vh - 80px);
+  }
+}
+
+/* Header */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
-  padding-bottom: 20px;
+  padding: 20px 24px;
   border-bottom: 1px solid var(--border);
+  background: linear-gradient(to right, var(--primary-light), transparent);
+  border-radius: 16px 16px 0 0;
 }
 
 .title {
-  font-size: 1.875rem;
+  font-size: 1.25rem;
   font-weight: 800;
   color: var(--foreground);
-  letter-spacing: -0.025em;
   margin: 0;
-  line-height: 1.2;
+  letter-spacing: -0.025em;
 }
 
 .subtitle {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--secondary);
   margin: 4px 0 0 0;
   font-weight: 500;
 }
 
-/* Controls */
-.controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.markReadBtn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.markReadBtn:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-}
-
-.iconControlBtn {
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
   background-color: var(--surface);
-  color: var(--secondary);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  color: var(--secondary);
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.iconControlBtn:hover:not(:disabled) {
+.closeBtn:hover {
   background-color: var(--surface-hover);
   color: var(--foreground);
   border-color: var(--border-focus);
 }
 
-.iconControlBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Filter Bar */
-.filterBar {
+/* Actions */
+.actions {
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border);
   display: flex;
-  gap: 8px;
-  padding: 4px;
-  background-color: var(--surface);
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  width: fit-content;
+  justify-content: flex-end;
 }
 
-.filterBtn {
+.markAllBtn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
-  background: transparent;
+  padding: 6px 14px;
+  background-color: var(--primary);
+  color: white;
   border: none;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.filterBtn:hover {
-  background-color: var(--surface-hover);
-  color: var(--foreground);
-}
-
-.filterBtnActive {
-  background-color: var(--primary);
-  color: white;
-  box-shadow: var(--shadow-sm);
+.markAllBtn:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-1px);
 }
 
 /* Notification List */
 .notificationList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.loadingContainer,
-.errorContainer,
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loadingContainer p {
+  margin-top: 12px;
+  color: var(--secondary);
+  font-size: 0.875rem;
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 40px;
+  padding: 60px 20px;
   text-align: center;
-  background-color: var(--surface);
-  border: 1px dashed var(--border);
-  border-radius: 16px;
-}
-
-.loadingContainer p {
-  margin-top: 16px;
-  color: var(--secondary);
-  font-size: 0.875rem;
-}
-
-.errorIcon {
-  color: var(--error);
-  opacity: 0.5;
-  margin-bottom: 16px;
-}
-
-.errorText {
-  color: var(--foreground);
-  font-size: 1rem;
-  font-weight: 600;
-  margin: 16px 0 8px;
-}
-
-.retryBtn {
-  margin-top: 16px;
-  padding: 8px 20px;
-  background-color: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.retryBtn:hover {
-  background-color: var(--primary-dark);
-  transform: translateY(-1px);
 }
 
 .emptyIcon {
   color: var(--secondary);
   opacity: 0.2;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .emptyTitle {
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--foreground);
   margin: 0 0 8px 0;
 }
 
 .emptyText {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--secondary);
-  max-width: 400px;
+  max-width: 300px;
   line-height: 1.6;
 }
 
@@ -212,30 +187,27 @@
 .notificationCard {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  padding: 14px;
   background-color: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   transition: all 0.2s ease;
   position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
 }
 
 .notificationCard:hover {
   background-color: var(--surface-hover);
   border-color: var(--border-focus);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .notificationUnread {
-  border-left: 4px solid var(--primary);
+  border-left: 3px solid var(--primary);
   background: linear-gradient(
     to right,
     var(--primary-light) 0%,
-    var(--surface) 8%,
+    var(--surface) 6%,
     var(--surface) 100%
   );
 }
@@ -244,20 +216,19 @@
   background: linear-gradient(
     to right,
     var(--primary-light) 0%,
-    var(--surface-hover) 8%,
+    var(--surface-hover) 6%,
     var(--surface-hover) 100%
   );
 }
 
 .iconWrapper {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .iconSystem { 
@@ -300,7 +271,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -308,12 +279,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .notificationTitle {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 700;
   color: var(--foreground);
   margin: 0;
@@ -323,14 +294,14 @@
 .notificationMeta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
 .priorityBadge {
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 6px;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -357,18 +328,22 @@
 }
 
 .notificationMessage {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--secondary);
-  line-height: 1.6;
+  line-height: 1.5;
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   word-break: break-word;
 }
 
 .timestamp {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.75rem;
+  gap: 3px;
+  font-size: 0.6875rem;
   color: var(--secondary);
   font-weight: 500;
   white-space: nowrap;
@@ -376,7 +351,7 @@
 
 .notificationActions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
   align-items: flex-start;
 }
@@ -385,12 +360,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   background-color: var(--surface);
   border: 1px solid var(--border);
   color: var(--secondary);
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
   text-decoration: none;
@@ -404,41 +379,51 @@
   box-shadow: var(--shadow-sm);
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .container {
-    gap: 20px;
-  }
+/* View All Button */
+.viewAllBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
 
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.viewAllBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
 
-  .controls {
-    width: 100%;
-    justify-content: flex-end;
-  }
+.viewAllBtn svg {
+  transition: transform 0.2s ease;
+}
 
-  .filterBar {
-    width: 100%;
-    overflow-x: auto;
-  }
+.viewAllBtn:hover svg {
+  transform: translateX(4px);
+}
 
-  .notificationCard {
-    flex-wrap: wrap;
-  }
+/* Scrollbar */
+.notificationList::-webkit-scrollbar {
+  width: 6px;
+}
 
-  .notificationHeader {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+.notificationList::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-  .notificationActions {
-    width: 100%;
-    justify-content: flex-end;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-  }
+.notificationList::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 3px;
+}
+
+.notificationList::-webkit-scrollbar-thumb:hover {
+  background-color: var(--border-focus);
 }

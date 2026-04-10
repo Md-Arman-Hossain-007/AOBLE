@@ -200,3 +200,74 @@ class CaseAnalyticsResponse(BaseModel):
     period: Dict[str, str]
     metrics: Dict[str, Any]
     distributions: Dict[str, Any]
+
+# Bulk Operation Schemas
+class BulkCaseAssignment(BaseModel):
+    case_ids: List[str] = Field(..., min_items=1)
+    assigned_to: str = Field(..., min_length=3)
+    reason: Optional[str] = Field(None, max_length=500)
+
+class BulkCaseAction(BaseModel):
+    case_ids: List[str] = Field(..., min_items=1)
+    reason: Optional[str] = Field(None, max_length=1000)
+
+class CaseWithSLA(BaseModel):
+    id: str
+    case_type: str
+    title: str
+    description: str
+    status: str
+    priority: str
+    assigned_to: Optional[str]
+    created_by: str
+    created_at: datetime
+    updated_at: datetime
+    due_date: Optional[datetime]
+    resolved_at: Optional[datetime]
+    customer_ref: Optional[str]
+    sla_status: str  # ok, warning, breached
+    time_remaining_hours: Optional[float]
+
+    class Config:
+        from_attributes = True
+
+class CaseListResponse(BaseModel):
+    cases: List[Dict[str, Any]]
+    total: int
+    skip: int
+    limit: int
+
+class RiskFactor(BaseModel):
+    factor: str
+    score: float
+    weight: float
+
+class RiskAssessmentResponse(BaseModel):
+    case_id: str
+    overall_risk_score: float
+    risk_level: str  # low, medium, high, critical
+    risk_factors: List[RiskFactor]
+    assessed_at: str
+
+class RelatedCase(BaseModel):
+    id: str
+    title: str
+    status: str
+    priority: str
+    case_type: str
+    created_at: str
+    relationship: str  # same_customer, similar_title
+
+class RelatedCasesResponse(BaseModel):
+    case_id: str
+    related_cases: List[RelatedCase]
+    total_related: int
+
+class UserSimpleResponse(BaseModel):
+    username: str
+    full_name: str
+    role: str
+    email: str
+
+    class Config:
+        from_attributes = True
