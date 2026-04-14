@@ -80,7 +80,7 @@ export default function HistoryAuditPage() {
     try {
       const [historyRes, statsRes] = await Promise.all([
         fetch(
-          `${API_BASE}/history/${activeTab}?` + new URLSearchParams({
+          `${API_BASE}/history/${activeTab === 'audit' ? 'audit-logs' : activeTab}?` + new URLSearchParams({
             skip: ((currentPage - 1) * pageSize).toString(),
             limit: pageSize.toString(),
             ...(startDate && { start_date: startDate }),
@@ -107,7 +107,7 @@ export default function HistoryAuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, currentPage, startDate, endDate, userId, statusFilter, searchQuery]);
+  }, [activeTab, currentPage, pageSize, startDate, endDate, userId, statusFilter, searchQuery]);
 
   useEffect(() => {
     fetchData();

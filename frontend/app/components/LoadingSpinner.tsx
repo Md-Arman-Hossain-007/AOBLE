@@ -41,16 +41,21 @@ export function LoadingSpinner({
         <Image 
           src="/logo_brand_v1.png" 
           alt="AMLTAB Logo" 
-          width={size === "small" ? 48 : size === "large" ? 96 : 72}
-          height={size === "small" ? 48 : size === "large" ? 96 : 72}
+          width={size === "small" ? 24 : size === "large" ? 96 : 72}
+          height={size === "small" ? 24 : size === "large" ? 96 : 72}
           className={styles.logo}
           priority
         />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-        <p className={styles.text}>{text || "AMLTAB SECURE RETRIEVAL"}</p>
-        {!text && <p className={styles.statusSub}>{statuses[statusIdx]}...</p>}
-      </div>
+      {(size !== "small") && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+          <p className={styles.text}>{text || "AMLTAB SECURE RETRIEVAL"}</p>
+          {!text && <p className={styles.statusSub}>{statuses[statusIdx]}...</p>}
+        </div>
+      )}
+      {size === "small" && (
+        <p className={styles.smallText}>{text || "Searching..."}</p>
+      )}
     </div>
   );
 

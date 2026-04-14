@@ -16,8 +16,34 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 32px;
   position: relative;
+  gap: 32px;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.spinnerContainer.small {
+  gap: 8px;
+}
+
+.spinnerContainer.small .logoWrapper {
+  width: 32px;
+  height: 32px;
+}
+
+.spinnerContainer.medium .logoWrapper {
+  width: 80px;
+  height: 80px;
+}
+
+.spinnerContainer.large .logoWrapper {
+  width: 140px;
+  height: 140px;
+}
+
+.spinnerContainer.small .text {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
 }
 
 .logoWrapper {
@@ -25,8 +51,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 140px;
-  height: 140px;
 }
 
 /* Radar Scanner Sweep */
@@ -70,6 +94,7 @@
   font-weight: 900;
   color: var(--primary);
   letter-spacing: 0.4em;
+  padding-left: 0.4em; /* Balancing letter-spacing for perfect centering */
   text-transform: uppercase;
   text-align: center;
   margin: 0;
@@ -111,7 +136,12 @@
   margin-top: -8px;
 }
 
-/* Error State */
+.smallText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
 .errorContainer {
   display: flex;
   flex-direction: column;

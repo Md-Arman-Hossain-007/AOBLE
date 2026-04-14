@@ -21,7 +21,8 @@ import {
   History,
   BookOpen,
   Building2,
-  User
+  User,
+  Globe
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -98,6 +99,7 @@ export default function DashboardLayout({
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/screen", label: "Screening", icon: UserSearch },
+    { href: "/global-search", label: "Global Entity Search", icon: Globe },
     { href: "/bulk", label: "Bulk Screening", icon: Layers },
     { href: "/cases", label: "Compliance & Case Management", icon: Inbox },
     { href: "/monitoring", label: "Monitoring", icon: Bell },

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
 import { User, Building2, UploadCloud, Search, AlertCircle, CheckCircle, XCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import Image from "next/image";
 import CountrySelect from "../../components/CountrySelect";
@@ -26,6 +26,7 @@ interface ScreeningResult {
 
 export default function ScreenPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [screeningType, setScreeningType] = useState<ScreeningType>("individual");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +42,29 @@ export default function ScreenPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [country, setCountry] = useState("");
   const [threshold, setThreshold] = useState(80);
+
+  // Pre-fill from query params (e.g. from Global Search)
+  useEffect(() => {
+    const name = searchParams.get("name");
+    const countryParam = searchParams.get("country");
+    const type = searchParams.get("type") as ScreeningType | null;
+    
+    if (type) setScreeningType(type);
+    if (countryParam) setCountry(countryParam);
+    if (name) {
+      if (type === "entity") {
+        setCompanyName(name);
+      } else {
+        const parts = name.split(" ");
+        if (parts.length > 1) {
+          setFirstName(parts[0]);
+          setLastName(parts.slice(1).join(" "));
+        } else {
+          setFirstName(name);
+        }
+      }
+    }
+  }, [searchParams]);
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem("amltab_token");

@@ -635,53 +635,102 @@
 }
 
 /* Pagination */
-.pagination {
+.paginationContainer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding: 16px 20px;
   border-top: 1px solid var(--border);
-  background-color: var(--surface-hover);
+  background-color: var(--surface);
 }
 
 .paginationInfo {
+  display: flex;
+  align-items: center;
+  gap: 24px;
   font-size: 0.8125rem;
   color: var(--secondary);
+}
+
+.paginationInfo strong {
+  color: var(--foreground);
   font-weight: 600;
+}
+
+.pageSizeSelector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pageSizeSelector label {
+  font-size: 0.8125rem;
+  color: var(--secondary);
+}
+
+.pageSizeSelect {
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.pageSizeSelect:focus {
+  border-color: var(--primary);
 }
 
 .paginationButtons {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 4px;
 }
 
 .pageBtn {
-  padding: 8px 16px;
-  background-color: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  background: transparent;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--foreground);
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .pageBtn:hover:not(:disabled) {
-  background-color: var(--surface-hover);
-  border-color: var(--border-focus);
+  background: var(--surface-hover);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .pageBtn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.pageInfo {
-  font-size: 0.8125rem;
+.pageBtn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
   color: var(--secondary);
-  font-weight: 600;
+  font-size: 0.8125rem;
 }
 
 /* Responsive */

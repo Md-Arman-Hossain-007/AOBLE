@@ -65,10 +65,10 @@ def get_all_history(
                 )
             )
         
+        # Sort legacy screenings
         screenings = screening_query.order_by(Screening.timestamp.desc()).all()
         for s in screenings:
             subject_name = s.company_name or f"{s.first_name or ''} {s.last_name or ''}".strip()
-            # Normalize status to lowercase
             normalized_status = s.status.lower() if s.status else "unknown"
             history_items.append({
                 "id": s.id,
@@ -82,6 +82,36 @@ def get_all_history(
                 "details": {
                     "match_count": s.match_count,
                     "results": s.results
+                }
+            })
+
+        # Get modern ScreeningResult history
+        v2_query = db.query(ScreeningResult).filter(
+            ScreeningResult.screened_by == current_user.username,
+            ScreeningResult.screened_at >= start_dt,
+            ScreeningResult.screened_at <= end_dt
+        )
+
+        if search:
+            search_term = f"%{search}%"
+            v2_query = v2_query.filter(ScreeningResult.customer_name.ilike(search_term))
+
+        v2_screenings = v2_query.order_by(ScreeningResult.screened_at.desc()).all()
+        for s in v2_screenings:
+            normalized_status = s.status.lower() if s.status else "unknown"
+            history_items.append({
+                "id": str(s.id),
+                "type": "screening",
+                "action": f"Screening completed - {s.status.capitalize()}",
+                "subject": s.customer_name,
+                "subject_type": "entity" if s.schema_type != 'Person' else "individual",
+                "user_id": s.screened_by,
+                "timestamp": s.screened_at.isoformat(),
+                "status": normalized_status,
+                "details": {
+                    "match_count": s.match_count,
+                    "risk_level": s.risk_level,
+                    "top_score": s.top_score
                 }
             })
     
@@ -220,8 +250,8 @@ def get_individual_history(
             )
         )
     
-    total = query.count()
-    screenings = query.order_by(Screening.timestamp.desc()).offset(skip).limit(limit).all()
+    total_legacy = query.count()
+    screenings = query.order_by(Screening.timestamp.desc()).all()
     
     items = []
     for s in screenings:
@@ -241,6 +271,47 @@ def get_individual_history(
                 "match_count": s.match_count
             }
         })
+
+    # Add V2 individual screenings
+    v2_query = db.query(ScreeningResult).filter(
+        ScreeningResult.screened_by == current_user.username,
+        ScreeningResult.schema_type == 'Person',
+        ScreeningResult.screened_at >= start_dt,
+        ScreeningResult.screened_at <= end_dt
+    )
+    if search:
+        v2_query = v2_query.filter(ScreeningResult.customer_name.ilike(f"%{search}%"))
+    if status:
+        v2_query = v2_query.filter(ScreeningResult.status.ilike(f"%{status}%"))
+    
+    v2_screenings = v2_query.order_by(ScreeningResult.screened_at.desc()).all()
+    for s in v2_screenings:
+        items.append({
+            "id": str(s.id),
+            "type": "individual",
+            "action": f"Individual screening - {s.status.capitalize()}",
+            "subject": s.customer_name,
+            "subject_type": "individual",
+            "user_id": s.screened_by,
+            "timestamp": s.screened_at.isoformat(),
+            "status": s.status.lower(),
+            "details": {
+                "match_count": s.match_count,
+                "risk_level": s.risk_level
+            }
+        })
+
+    # Re-sort and paginate
+    items.sort(key=lambda x: x["timestamp"], reverse=True)
+    total = len(items)
+    paginated_items = items[skip:skip + limit]
+    
+    return {
+        "items": paginated_items,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
     
     return {
         "items": items,
@@ -284,8 +355,8 @@ def get_entity_history(
         search_term = f"%{search}%"
         query = query.filter(Screening.company_name.ilike(search_term))
     
-    total = query.count()
-    screenings = query.order_by(Screening.timestamp.desc()).offset(skip).limit(limit).all()
+    total_legacy = query.count()
+    screenings = query.order_by(Screening.timestamp.desc()).all()
     
     items = []
     for s in screenings:
@@ -303,6 +374,47 @@ def get_entity_history(
                 "match_count": s.match_count
             }
         })
+
+    # Add V2 entity screenings
+    v2_query = db.query(ScreeningResult).filter(
+        ScreeningResult.screened_by == current_user.username,
+        ScreeningResult.schema_type != 'Person',
+        ScreeningResult.screened_at >= start_dt,
+        ScreeningResult.screened_at <= end_dt
+    )
+    if search:
+        v2_query = v2_query.filter(ScreeningResult.customer_name.ilike(f"%{search}%"))
+    if status:
+        v2_query = v2_query.filter(ScreeningResult.status.ilike(f"%{status}%"))
+    
+    v2_screenings = v2_query.order_by(ScreeningResult.screened_at.desc()).all()
+    for s in v2_screenings:
+        items.append({
+            "id": str(s.id),
+            "type": "entity",
+            "action": f"Entity screening - {s.status.capitalize()}",
+            "subject": s.customer_name,
+            "subject_type": "entity",
+            "user_id": s.screened_by,
+            "timestamp": s.screened_at.isoformat(),
+            "status": s.status.lower(),
+            "details": {
+                "match_count": s.match_count,
+                "risk_level": s.risk_level
+            }
+        })
+
+    # Re-sort and paginate
+    items.sort(key=lambda x: x["timestamp"], reverse=True)
+    total = len(items)
+    paginated_items = items[skip:skip + limit]
+    
+    return {
+        "items": paginated_items,
+        "total": total,
+        "skip": skip,
+        "limit": limit
+    }
     
     return {
         "items": items,
