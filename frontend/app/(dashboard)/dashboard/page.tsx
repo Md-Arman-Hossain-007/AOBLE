@@ -30,6 +30,7 @@ import { KPICard } from "@/app/components/dashboard/KPICard";
 import { AreaChartWidget } from "@/app/components/dashboard/AreaChartWidget";
 import { DonutChartWidget } from "@/app/components/dashboard/DonutChartWidget";
 import { BarChartWidget } from "@/app/components/dashboard/BarChartWidget";
+import MatchBreakdownChart from "@/app/components/dashboard/MatchBreakdownChart";
 import { ActivityFeed } from "@/app/components/dashboard/ActivityFeed";
 import { StatCard } from "@/app/components/dashboard/StatCard";
 import { LoadingSpinner, ErrorState } from "@/app/components/LoadingSpinner";
@@ -867,18 +868,24 @@ export default function EnterpriseDashboard() {
       {/* Charts & Activity Row */}
       <section className={styles.bottomGrid}>
         <div className={styles.chartLeft}>
-          <BarChartWidget
-            title="Match Breakdown"
-            subtitle="Hit distribution by category"
-            data={matchBreakdownData}
-            dataKey="new"
-            xAxisKey="label"
-            layout="vertical"
-            colors={["#6366f1"]}
-            height={280}
-            icon={<Filter size={18} />}
-            showValues
-          />
+          <div className={styles.chartCard}>
+            <div className={styles.chartCardHeader}>
+              <div className={styles.chartIcon}>
+                <Filter size={18} />
+              </div>
+              <div>
+                <h3 className={styles.chartTitle}>Match Breakdown</h3>
+                <p className={styles.chartSubtitle}>Hit distribution by category</p>
+              </div>
+            </div>
+            <MatchBreakdownChart
+              data={matchBreakdownData.map(d => ({
+                label: d.label,
+                value: d.new
+              }))}
+              height={280}
+            />
+          </div>
         </div>
 
         <div className={styles.activityCenter}>

@@ -202,7 +202,7 @@ async def _call_yente(
         data: dict[str, Any] = resp.json()
     return data
 
-def _build_match_result(hit: dict[str, Any], db: Session) -> MatchResult:
+def _build_match_result(hit: dict[str, Any], db: Session, match_index: int = 0) -> MatchResult:
     entity_id  = hit.get("id", "")
     # Fallback: If entity_id is empty, generate one from caption or use a unique identifier
     if not entity_id:
@@ -215,7 +215,10 @@ def _build_match_result(hit: dict[str, Any], db: Session) -> MatchResult:
             # Last resort: generate a random ID
             import uuid
             entity_id = f"match-{str(uuid.uuid4())[:12]}"
-    
+
+    # Generate system match ID (M-1, M-2, M-3, etc.)
+    match_id = f"M-{match_index + 1}"
+
     props      = hit.get("properties", {})
     score      = _calculate_weighted_score(hit)
     datasets   = hit.get("datasets", [])
@@ -239,7 +242,7 @@ def _build_match_result(hit: dict[str, Any], db: Session) -> MatchResult:
         id_numbers    = profile.id_numbers    or props.get("idNumber", [])
         positions     = profile.positions     or props.get("position", [])
     else:
-        # If no profile, we attempt to extract from the Yente hit directly 
+        # If no profile, we attempt to extract from the Yente hit directly
         # (needs nested=true enabled in _call_yente).
         sanctions, passports, addresses, family, ownership = _extract_nested(hit)
         birth_dates   = props.get("birthDate", [])
@@ -249,6 +252,7 @@ def _build_match_result(hit: dict[str, Any], db: Session) -> MatchResult:
         positions     = props.get("position", [])
 
     res = MatchResult(
+        match_id           = match_id,
         entity_id          = entity_id,
         schema_type        = hit.get("schema", ""),
         caption            = hit.get("caption", ""),
@@ -306,34 +310,34 @@ def _save_screening_result(
         auto_decision = "clear (whitelisted)"
 
     result = ScreeningResult(
-        id                 = screening_id,
-        customer_ref       = req.customer_ref,
-        customer_name      = query_name,
-        schema_type        = screening_type,
+        id                 = str(screening_id),
+        customer_ref       = str(req.customer_ref),
+        customer_name      = str(query_name),
+        schema_type        = str(screening_type),
         query_payload      = {
-            "type":    screening_type,
+            "type":    str(screening_type),
             "details": query_details,
             "config": {
-                "algorithm":        req.algorithm,
-                "threshold":        req.threshold,
-                "match_limit":      req.match_limit,
+                "algorithm":        str(req.algorithm),
+                "threshold":        float(req.threshold),
+                "match_limit":      int(req.match_limit),
                 "topics":           req.topics,
                 "include_datasets": req.include_datasets,
                 "exclude_datasets": req.exclude_datasets,
             }
         },
         match_count        = len(matches),
-        top_score          = top_score,
-        top_match_id       = top_match.entity_id       if top_match else None,
-        top_match_caption  = top_match.caption         if top_match else None,
+        top_score          = float(top_score),
+        top_match_id       = str(top_match.entity_id)       if top_match else None,
+        top_match_caption  = str(top_match.caption)         if top_match else None,
         all_matches        = [m.model_dump() for m in matches],
-        risk_level         = risk_level.value,
-        auto_decision      = auto_decision,
-        status             = final_status,
-        screening_reason   = req.screening_reason,
-        screened_by        = req.screened_by,
-        batch_id           = batch_id if batch_id is not None else req.batch_id,
-        duration_ms        = duration_ms,
+        risk_level         = str(risk_level.value),
+        auto_decision      = str(auto_decision),
+        status             = str(final_status),
+        screening_reason   = str(req.screening_reason) if req.screening_reason else None,
+        screened_by        = str(req.screened_by) if req.screened_by else None,
+        batch_id           = str(batch_id) if batch_id is not None else (str(req.batch_id) if req.batch_id is not None else None),
+        duration_ms        = int(duration_ms) if duration_ms else None,
     )
     db.add(result)
     db.commit()
@@ -381,7 +385,7 @@ async def perform_screening(
     )
     
     raw_matches = yente_response.get("responses", {}).get(req.customer_ref, {}).get("results", [])
-    matches = [_build_match_result(hit, db) for hit in raw_matches]
+    matches = [_build_match_result(hit, db, idx) for idx, hit in enumerate(raw_matches)]
     
     top_score    = matches[0].score if matches else 0.0
     risk_level   = compute_risk_level(top_score)

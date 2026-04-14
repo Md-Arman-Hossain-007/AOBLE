@@ -100,6 +100,7 @@ export default function DashboardLayout({
     { href: "/screen", label: "Screening", icon: UserSearch },
     { href: "/bulk", label: "Bulk Screening", icon: Layers },
     { href: "/cases", label: "Compliance & Case Management", icon: Inbox },
+    { href: "/monitoring", label: "Monitoring", icon: Bell },
     { href: "/history/all", label: "History & Audit", icon: History },
     { href: "/api-docs", label: "API Documentation", icon: BookOpen },
     { href: "/settings", label: "Settings", icon: Settings },
@@ -201,10 +202,11 @@ export default function DashboardLayout({
           {navItems.map((item: any) => {
             const Icon = item.icon;
             // Check if current path matches the nav item
-            const isActive = item.href 
-              ? (pathname === item.href || 
+            const isActive = item.href
+              ? (pathname === item.href ||
                  (item.href === '/dashboard' && pathname === '/') ||
-                 (item.href === '/history/all' && pathname.startsWith('/history')))
+                 (item.href === '/history/all' && pathname.startsWith('/history')) ||
+                 (item.href === '/monitoring' && pathname === '/monitoring'))
               : false;
 
             return (

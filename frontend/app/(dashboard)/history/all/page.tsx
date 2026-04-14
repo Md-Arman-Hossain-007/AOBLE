@@ -68,7 +68,7 @@ export default function HistoryAuditPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const pageSize = 20;
+  const [pageSize, setPageSize] = useState(20);
 
   const getToken = () => localStorage.getItem("amltab_token");
 
@@ -150,6 +150,50 @@ export default function HistoryAuditPage() {
     setUserId("");
     setStatusFilter("all");
     setSearchQuery("");
+    setCurrentPage(1);
+  };
+
+  // Pagination helpers
+  const totalPages = Math.ceil(totalItems / pageSize);
+  
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
     setCurrentPage(1);
   };
 
@@ -468,28 +512,79 @@ export default function HistoryAuditPage() {
             </table>
 
             {/* Pagination */}
-            {totalItems > pageSize && (
-              <div className={styles.pagination}>
-                <span className={styles.paginationInfo}>
-                  Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalItems)} of {totalItems}
-                </span>
-                <div className={styles.paginationButtons}>
-                  <button 
-                    className={styles.pageBtn}
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  >
-                    Previous
-                  </button>
-                  <span className={styles.pageInfo}>
-                    Page {currentPage} of {Math.ceil(totalItems / pageSize)}
+            {totalItems > 0 && (
+              <div className={styles.paginationContainer}>
+                <div className={styles.paginationInfo}>
+                  <span>
+                    Showing <strong>{(currentPage - 1) * pageSize + 1}</strong> to <strong>{Math.min(currentPage * pageSize, totalItems)}</strong> of{' '}
+                    <strong>{totalItems}</strong> records
                   </span>
-                  <button 
+                  
+                  <div className={styles.pageSizeSelector}>
+                    <label htmlFor="pageSize">Rows per page:</label>
+                    <select
+                      id="pageSize"
+                      value={pageSize}
+                      onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                      className={styles.pageSizeSelect}
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className={styles.paginationButtons}>
+                  <button
                     className={styles.pageBtn}
-                    disabled={currentPage >= Math.ceil(totalItems / pageSize)}
-                    onClick={() => setCurrentPage(p => Math.min(Math.ceil(totalItems / pageSize), p + 1))}
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    title="First page"
                   >
-                    Next
+                    {'<<'}
+                  </button>
+                  
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    title="Previous page"
+                  >
+                    {'<'}
+                  </button>
+                  
+                  {getPageNumbers().map((page, index) => (
+                    page === '...' ? (
+                      <span key={`ellipsis-${index}`} className={styles.ellipsis}>...</span>
+                    ) : (
+                      <button
+                        key={page}
+                        className={`${styles.pageBtn} ${currentPage === page ? styles.active : ''}`}
+                        onClick={() => handlePageChange(page as number)}
+                      >
+                        {page}
+                      </button>
+                    )
+                  ))}
+                  
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    title="Next page"
+                  >
+                    {'>'}
+                  </button>
+                  
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    title="Last page"
+                  >
+                    {'>>'}
                   </button>
                 </div>
               </div>

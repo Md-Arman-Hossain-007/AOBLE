@@ -55,7 +55,18 @@ async def upload_bulk_file(
     # Start Celery task
     process_bulk_screening.delay(job_id, file_path, current_user.username)
 
-    return job
+    # Return response with correct field names for frontend
+    return {
+        "id": job.id,
+        "filename": job.filename,
+        "total": job.total_rows,
+        "processed": job.processed_rows,
+        "status": job.status,
+        "created_at": job.created_at,
+        "completed_at": job.completed_at,
+        "results_summary": job.results_summary,
+        "error": job.error
+    }
 
 @router.get("/status/{job_id}", response_model=schemas.BulkJobStatus)
 def get_job_status(
@@ -113,4 +124,69 @@ def get_job_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    return db.query(BulkJob).filter(BulkJob.user_id == current_user.username).order_by(BulkJob.created_at.desc()).all()
+    jobs = db.query(BulkJob).filter(BulkJob.user_id == current_user.username).order_by(BulkJob.created_at.desc()).all()
+    
+    # Transform to match frontend expectations (total_rows -> total, processed_rows -> processed)
+    return [
+        {
+            "id": job.id,
+            "filename": job.filename,
+            "total": job.total_rows,
+            "processed": job.processed_rows,
+            "status": job.status,
+            "created_at": job.created_at,
+            "completed_at": job.completed_at,
+            "results_summary": job.results_summary,
+            "error": job.error
+        }
+        for job in jobs
+    ]
+
+@router.get("/{job_id}/results")
+def get_job_results(
+    job_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get detailed screening results for a bulk job"""
+    from ..models.models import ScreeningResult
+
+    job = db.query(BulkJob).filter(BulkJob.id == job_id, BulkJob.user_id == current_user.username).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Bulk job not found")
+
+    # Fetch all screening results for this batch
+    print(f"[DEBUG API] Fetching results for job {job_id}")
+    print(f"[DEBUG API] Job total_rows: {job.total_rows}, processed_rows: {job.processed_rows}")
+    print(f"[DEBUG API] Job results_summary: {job.results_summary}")
+    
+    results = db.query(ScreeningResult).filter(
+        ScreeningResult.batch_id == job_id
+    ).all()
+    
+    print(f"[DEBUG API] Found {len(results)} ScreeningResult records in database")
+    for i, r in enumerate(results):
+        print(f"[DEBUG API] Result {i+1}: id={r.id}, name={r.customer_name}, risk={r.risk_level}, batch_id={r.batch_id}")
+
+    # Transform results for frontend
+    formatted_results = []
+    for r in results:
+        formatted_results.append({
+            "id": str(r.id),
+            "name": r.customer_name,
+            "type": "Entity" if r.schema_type != "Person" else "Individual",
+            "match_count": r.match_count or 0,
+            "risk_level": r.risk_level or "LOW",
+            "status": r.final_decision or r.auto_decision or "pending",
+            "screened_at": r.screened_at.isoformat() if r.screened_at else None
+        })
+
+    print(f"[DEBUG API] Returning {len(formatted_results)} formatted results")
+
+    return {
+        "job_id": job_id,
+        "total": job.total_rows,
+        "processed": job.processed_rows,
+        "results_summary": job.results_summary,
+        "results": formatted_results
+    }

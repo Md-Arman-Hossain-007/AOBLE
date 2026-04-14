@@ -39,6 +39,7 @@ import { Modal } from "../../../components/Modal";
 // --- Types ---
 interface Match {
   id?: string;
+  match_id?: string;  // System-generated match number (e.g., "M-1", "M-2")
   entity_id?: string;
   status?: string;
   // Per-match analyst decision fields (populated by the backend)
@@ -140,9 +141,10 @@ export default function ScreeningDetailPage() {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendingMatchUpdate, setPendingMatchUpdate] = useState<{
-    entityId: string;
+    entityId: string; // Stores match_number (e.g., "M-1") for API call
     status: string;
     name: string;
+    matchIndex?: number;
   } | null>(null);
 
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -177,22 +179,32 @@ export default function ScreeningDetailPage() {
     const token = localStorage.getItem("amltab_token");
     if (!token) return;
 
+    // Optimistic update
+    const previousEnabled = data?.monitoring_enabled;
+    setData(prev => prev ? { ...prev, monitoring_enabled: !prev.monitoring_enabled } : prev);
+
     try {
       setTogglingMonitoring(true);
       const res = await fetch(`${API_URL}/screen/${id}/monitor`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (res.ok) {
         const result = await res.json();
-        // Optimistically update the UI state
+        // Sync with server response
         setData(prev => prev ? { ...prev, monitoring_enabled: result.monitoring_enabled } : prev);
         addToast(result.monitoring_enabled ? "Customer Profile Active Monitoring Enabled!" : "Monitoring Deactivated.", "success");
+        // Refresh history to show monitoring action
+        fetchHistory();
       } else {
+        // Revert optimistic update on error
+        setData(prev => prev ? { ...prev, monitoring_enabled: previousEnabled } : prev);
         addToast("Failed to toggle monitoring status.", "error");
       }
     } catch (err) {
+      // Revert optimistic update on error
+      setData(prev => prev ? { ...prev, monitoring_enabled: previousEnabled } : prev);
       addToast("Network error toggling monitoring.", "error");
     } finally {
       setTogglingMonitoring(false);
@@ -354,21 +366,16 @@ export default function ScreeningDetailPage() {
     }
   };
 
-  const handleMatchStatusUpdate = (matchIdx: number, entityId: string, matchStatus: string, matchName?: string) => {
-    // Use entity_id if available, otherwise use match name as identifier
-    const identifier = entityId || matchName || `match-${matchIdx}`;
-    
-    // Validate before proceeding
-    if (!identifier) {
-      addToast("Error: Cannot update match - missing entity ID", "error");
-      return;
-    }
+  const handleMatchStatusUpdate = (matchIdx: number, matchId: string, matchStatus: string, matchName?: string) => {
+    // Use match_id (M-1, M-2, etc.) as the primary identifier
+    const match = data?.matches[matchIdx];
+    const finalMatchId = match?.match_id || matchId || `M-${matchIdx + 1}`;
 
-    const match = data?.matches.find(m => m.entity_id === entityId || (m.name === matchName && !m.entity_id));
     setPendingMatchUpdate({
-      entityId: identifier,
+      entityId: finalMatchId, // Stores match_id like "M-1"
       status: matchStatus,
-      name: match?.name || "this candidate"
+      name: match?.name || matchName || "this candidate",
+      matchIndex: matchIdx
     });
     setIsModalOpen(true);
   };
@@ -379,9 +386,9 @@ export default function ScreeningDetailPage() {
     const token = localStorage.getItem("amltab_token");
     if (!token) return;
 
-    // Validate that entity_id is present
+    // Validate that match_id is present
     if (!pendingMatchUpdate.entityId) {
-      addToast("Error: Missing entity ID for this match", "error");
+      addToast("Error: Missing match ID for this match", "error");
       setIsModalOpen(false);
       setPendingMatchUpdate(null);
       return;
@@ -390,11 +397,11 @@ export default function ScreeningDetailPage() {
     const mappedStatus = pendingMatchUpdate.status === 'matched' ? 'True Match' : 'False Positive';
     setIsModalOpen(false); // Close immediately for responsiveness
 
-    // Optimistically update the UI immediately
+    // Optimistically update the UI immediately using match index
     setData(prev => {
       if (!prev) return prev;
-      const updatedMatches = prev.matches.map(m => {
-        if (m.entity_id === pendingMatchUpdate.entityId || m.name === pendingMatchUpdate.name) {
+      const updatedMatches = prev.matches.map((m, idx) => {
+        if (idx === pendingMatchUpdate.matchIndex) {
           return {
             ...m,
             decision: mappedStatus,
@@ -410,6 +417,7 @@ export default function ScreeningDetailPage() {
 
     try {
       setSubmitting(true);
+      // Use match_id based endpoint
       const res = await fetch(`${API_URL}/screen/${id}/matches/${pendingMatchUpdate.entityId}/decision`, {
         method: "POST",
         headers: {
@@ -680,15 +688,26 @@ export default function ScreeningDetailPage() {
                   <div className={styles.matchCardHeader}>
                     <div className={styles.matchInfo}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          fontWeight: 900, 
+                          color: 'var(--primary)',
+                          background: 'rgba(99, 102, 241, 0.1)',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(99, 102, 241, 0.3)'
+                        }}>
+                          {match.match_id || `M-${idx + 1}`}
+                        </span>
                         <span className={styles.matchName}>{match.name}</span>
                         {idx === 0 && (
-                          <span style={{ 
-                            background: '#f43f5e', 
-                            color: 'white', 
-                            fontSize: '0.6rem', 
-                            padding: '2px 10px', 
-                            borderRadius: '99px', 
-                            fontWeight: 900, 
+                          <span style={{
+                            background: '#f43f5e',
+                            color: 'white',
+                            fontSize: '0.6rem',
+                            padding: '2px 10px',
+                            borderRadius: '99px',
+                            fontWeight: 900,
                             letterSpacing: '0.05em',
                             boxShadow: '0 0 10px rgba(244, 63, 94, 0.3)',
                             textTransform: 'uppercase'
@@ -782,18 +801,16 @@ export default function ScreeningDetailPage() {
                     <div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: '16px' }}>
                       <div style={{ display: 'flex', gap: '12px' }}>
                         <button
-                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "matched", match.name)}
+                          onClick={() => handleMatchStatusUpdate(idx, match.match_id || `M-${idx + 1}`, "matched", match.name)}
                           className={`${styles.matchActionBtn} ${styles.confirmMatchBtn} ${(match.decision === 'True Match' || match.status === 'matched' || match.decision === 'matched') ? styles.confirmMatchBtnActive : ''}`}
-                          disabled={!match.entity_id}
-                          title={!match.entity_id ? "Missing entity ID" : "Mark as True Match"}
+                          title="Mark as True Match"
                         >
                           <CheckCircle2 size={14} /> True Match
                         </button>
                         <button
-                          onClick={() => handleMatchStatusUpdate(idx, match.entity_id || "", "false_positive", match.name)}
+                          onClick={() => handleMatchStatusUpdate(idx, match.match_id || `M-${idx + 1}`, "false_positive", match.name)}
                           className={`${styles.matchActionBtn} ${styles.falsePositiveBtn} ${(match.decision === 'False Positive' || match.status === 'false_positive' || match.decision === 'false_positive') ? styles.falsePositiveBtnActive : ''}`}
-                          disabled={!match.entity_id}
-                          title={!match.entity_id ? "Missing entity ID" : "Mark as False Positive"}
+                          title="Mark as False Positive"
                         >
                           <XCircle size={14} /> False Positive
                         </button>
@@ -857,20 +874,23 @@ export default function ScreeningDetailPage() {
 
             {history.map((h, hi) => {
               const isSystemEvent  = h.user_id === 'System' || h.action === 'status_auto_resolved';
-              const isMatchDecision = h.action === 'match_decision_updated';
+              const isMatchDecision = h.action === 'match_decision_updated' || h.action === 'MATCH_DECISION';
               const newStatus      = h.details?.new_status || h.details?.new_status;
-              const caption        = h.details?.caption;
+              const caption        = h.details?.caption || h.details?.match_name;
               const note           = h.details?.note;
               const entityId       = h.details?.entity_id;
+              const matchId        = h.details?.match_id;
 
               const dotColor = isSystemEvent
                 ? (newStatus === 'Clear' ? '#10b981' : newStatus === 'Rejected' ? '#f43f5e' : '#f59e0b')
-                : (h.details?.new_status === 'True Match' ? '#f43f5e' : h.details?.new_status === 'False Positive' ? '#10b981' : 'var(--primary)');
+                : (h.details?.new_status === 'True Match' || h.details?.new_status === 'matched' ? '#f43f5e' : h.details?.new_status === 'False Positive' || h.details?.new_status === 'false_positive' ? '#10b981' : 'var(--primary)');
 
               const actionLabel = isSystemEvent
                 ? `System auto-resolved overall status → ${newStatus}`
                 : isMatchDecision
-                  ? `Marked "${caption || entityId}" as ${h.details?.new_status}`
+                  ? matchId 
+                    ? `Marked Match #${matchId} "${caption || entityId}" as ${h.details?.new_status}`
+                    : `Marked "${caption || entityId}" as ${h.details?.new_status}`
                   : h.action.replace(/_/g, ' ');
 
               return (

@@ -117,6 +117,7 @@ class OwnershipDetail(BaseModel):
     start_date: Optional[List[str]] = Field(default_factory=list)
 
 class MatchResult(BaseModel):
+    match_id:    str = ""  # System-generated unique match ID (e.g., "M-1", "M-2")
     entity_id:   str = ""
     schema_type: str = "Entity"
     caption:     str = "Unknown"

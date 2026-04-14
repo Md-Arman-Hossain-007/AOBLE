@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 from ..db.session import get_db
-from ..models.models import User, Screening, MonitoredEntity, ScreeningResult
+from ..models.models import User, Screening, MonitoredEntity, ScreeningResult, OSEntity
 from ..api.auth import get_current_active_user
 
 router = APIRouter()
@@ -216,31 +216,148 @@ def get_dashboard_stats(
         MonitoredEntity.status == "active"
     ).scalar()
 
-    # --- NEW: Service Summary Table Data ---
+    # --- Service Summary Table Data (REAL DATA from database) ---
+    # Count individual screenings this month
+    individual_screenings = db.query(func.count(Screening.id)).join(
+        User, User.username == Screening.user_id
+    ).filter(
+        User.org_id == current_user.org_id,
+        Screening.timestamp >= start_of_month,
+        (Screening.company_name == None) | (Screening.company_name == '')
+    ).scalar() or 0
+
+    individual_screenings_v2 = db.query(func.count(ScreeningResult.id)).join(
+        User, User.username == ScreeningResult.screened_by
+    ).filter(
+        User.org_id == current_user.org_id,
+        ScreeningResult.screened_at >= start_of_month,
+        ScreeningResult.schema_type == 'Person'
+    ).scalar() or 0
+
+    total_individual = individual_screenings + individual_screenings_v2
+
+    # Count entity/corporate screenings this month
+    entity_screenings = db.query(func.count(Screening.id)).join(
+        User, User.username == Screening.user_id
+    ).filter(
+        User.org_id == current_user.org_id,
+        Screening.timestamp >= start_of_month,
+        Screening.company_name != None,
+        Screening.company_name != ''
+    ).scalar() or 0
+
+    entity_screenings_v2 = db.query(func.count(ScreeningResult.id)).join(
+        User, User.username == ScreeningResult.screened_by
+    ).filter(
+        User.org_id == current_user.org_id,
+        ScreeningResult.screened_at >= start_of_month,
+        ScreeningResult.schema_type != 'Person'
+    ).scalar() or 0
+
+    total_entity = entity_screenings + entity_screenings_v2
+
+    # Count monitoring rescan (active monitoring)
+    # Note: MonitoredEntity doesn't have entity_type field, so we'll estimate based on query_details
+    total_monitoring = db.query(func.count(MonitoredEntity.id)).join(
+        User, User.username == MonitoredEntity.user_id
+    ).filter(
+        User.org_id == current_user.org_id,
+        MonitoredEntity.status == "active"
+    ).scalar() or 0
+
+    # For now, split monitoring evenly (could be improved by analyzing query_details JSON)
+    monitoring_individual = total_monitoring // 2
+    monitoring_entity = total_monitoring - monitoring_individual
+
     service_summary = [
-        {"name": "PEP, Sanctions & Adverse Media (Individuals)", "count": total_screenings_this_month if total_screenings_this_month > 0 else 18344, "icon": "👤"},
-        {"name": "Sanctions & Adverse Media (Corporates)", "count": daily_data[1]["entity"] if daily_data[1]["entity"] > 0 else 1714, "icon": "🏢"},
-        {"name": "ID Verification", "count": 0, "icon": "🆔"},
-        {"name": "Know Your Business (KYB)", "count": 0, "icon": "🔍"},
-        {"name": "Risk Assessment", "count": 0, "icon": "📊"},
-        {"name": "Web Search", "count": 16502, "icon": "🌐"},
-        {"name": "Advanced Media Search", "count": 0, "icon": "📰"},
-        {"name": "Monitoring Rescan (Individuals)", "count": 40387, "icon": "👁️"},
-        {"name": "Monitoring Rescan (Corporates)", "count": 818, "icon": "👁️"},
+        {"name": "PEP, Sanctions & Adverse Media (Individuals)", "count": total_individual, "icon": "👤"},
+        {"name": "Sanctions & Adverse Media (Corporates)", "count": total_entity, "icon": "🏢"},
+        {"name": "ID Verification", "count": 0, "icon": "🆔"},  # Not implemented yet
+        {"name": "Know Your Business (KYB)", "count": 0, "icon": "🔍"},  # Not implemented yet
+        {"name": "Risk Assessment", "count": 0, "icon": "📊"},  # Not implemented yet
+        {"name": "Web Search", "count": 0, "icon": "🌐"},  # Not tracked in current schema
+        {"name": "Advanced Media Search", "count": 0, "icon": "📰"},  # Not tracked in current schema
+        {"name": "Monitoring Rescan (Individuals)", "count": monitoring_individual, "icon": "👁️"},
+        {"name": "Monitoring Rescan (Corporates)", "count": monitoring_entity, "icon": "👁️"},
     ]
 
-    # --- NEW: Breakdown Chart Data (Matches) ---
-    # We will mock some of these based on existing screenings/monitoring to make the chart look alive
-    breakdown_individual = [
-        {"label": (now - timedelta(days=30*i)).strftime("%b %y"), "new": 50 + i*10, "updated": 30 + i*5, "removed": 10 + i}
-        for i in range(5, -1, -1)
-    ]
-    breakdown_corporate = [
-        {"label": (now - timedelta(days=30*i)).strftime("%b %y"), "new": 20 + i*5, "updated": 15 + i*3, "removed": 5 + i}
-        for i in range(5, -1, -1)
-    ]
+    # --- Breakdown Chart Data (Matches - REAL DATA) ---
+    # Get monthly match statistics for the last 6 months
+    breakdown_individual = []
+    breakdown_corporate = []
+    
+    for i in range(5, -1, -1):
+        m_date = (now.replace(day=1) - timedelta(days=30 * i)).replace(day=1)
+        m_start = m_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        m_end = (m_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
+        
+        # Individual matches
+        ind_new = db.query(func.count(ScreeningResult.id)).join(
+            User, User.username == ScreeningResult.screened_by
+        ).filter(
+            User.org_id == current_user.org_id,
+            ScreeningResult.schema_type == 'Person',
+            ScreeningResult.screened_at >= m_start,
+            ScreeningResult.screened_at <= m_end,
+            ScreeningResult.match_count > 0,
+            ScreeningResult.status == 'pending'  # New matches not yet reviewed
+        ).scalar() or 0
+        
+        ind_updated = db.query(func.count(ScreeningResult.id)).join(
+            User, User.username == ScreeningResult.screened_by
+        ).filter(
+            User.org_id == current_user.org_id,
+            ScreeningResult.schema_type == 'Person',
+            ScreeningResult.screened_at >= m_start,
+            ScreeningResult.screened_at <= m_end,
+            ScreeningResult.match_count > 0,
+            ScreeningResult.status.in_(['Review', 'Rejected', 'Clear'])  # Reviewed/updated
+        ).scalar() or 0
+        
+        # For "removed", we can track screenings that had matches before but now cleared
+        # This is a simplified approximation
+        ind_removed = 0  # Would need historical tracking for accurate removed count
+        
+        breakdown_individual.append({
+            "label": m_start.strftime("%b %y"),
+            "new": ind_new,
+            "updated": ind_updated,
+            "removed": ind_removed
+        })
+        
+        # Corporate matches
+        ent_new = db.query(func.count(ScreeningResult.id)).join(
+            User, User.username == ScreeningResult.screened_by
+        ).filter(
+            User.org_id == current_user.org_id,
+            ScreeningResult.schema_type != 'Person',
+            ScreeningResult.screened_at >= m_start,
+            ScreeningResult.screened_at <= m_end,
+            ScreeningResult.match_count > 0,
+            ScreeningResult.status == 'pending'
+        ).scalar() or 0
+        
+        ent_updated = db.query(func.count(ScreeningResult.id)).join(
+            User, User.username == ScreeningResult.screened_by
+        ).filter(
+            User.org_id == current_user.org_id,
+            ScreeningResult.schema_type != 'Person',
+            ScreeningResult.screened_at >= m_start,
+            ScreeningResult.screened_at <= m_end,
+            ScreeningResult.match_count > 0,
+            ScreeningResult.status.in_(['Review', 'Rejected', 'Clear'])
+        ).scalar() or 0
+        
+        ent_removed = 0
+        
+        breakdown_corporate.append({
+            "label": m_start.strftime("%b %y"),
+            "new": ent_new,
+            "updated": ent_updated,
+            "removed": ent_removed
+        })
 
-    # --- Get screening matches for breakdown ---
+    # Get total screenings with matches this month
     total_matches = db.query(func.count(ScreeningResult.id)).join(
         User, User.username == ScreeningResult.screened_by
     ).filter(
@@ -248,8 +365,13 @@ def get_dashboard_stats(
         ScreeningResult.match_count > 0,
         ScreeningResult.screened_at >= start_of_month
     ).scalar() or 0
-    
+
     non_matches = total_screenings_this_month - total_matches
+
+    # Get actual database count from OpenSanctions entities
+    total_db_entities = db.query(func.count(OSEntity.id)).filter(
+        OSEntity.is_active == True
+    ).scalar() or 0
     
     return {
         "monthly_chart": monthly_chart,
@@ -266,7 +388,7 @@ def get_dashboard_stats(
         "breakdown_individual": breakdown_individual,
         "breakdown_corporate": breakdown_corporate,
         "total_matches": total_matches,
-        "database_names": 5000000,
+        "database_names": total_db_entities,
         "match_rate": float(f"{(total_matches / total_screenings_this_month * 100) if total_screenings_this_month > 0 else 0:.1f}")
     }
 

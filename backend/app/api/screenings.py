@@ -663,15 +663,17 @@ async def toggle_monitoring(
         models.MonitoredEntity.customer_ref == screening_id,
         models.MonitoredEntity.status == "active"
     ).first()
-    
+
     if existing:
         existing.status = "inactive"
         enabled = False
+        action = "monitoring_disabled"
+        action_desc = "Disabled ongoing monitoring"
     else:
         inactive = db.query(models.MonitoredEntity).filter(
             models.MonitoredEntity.customer_ref == screening_id,
         ).first()
-        
+
         if inactive:
             inactive.status = "active"
             enabled = True
@@ -679,7 +681,7 @@ async def toggle_monitoring(
             screening = await get_screening(screening_id, db)
             query = screening.get("query", {})
             query_name = query.get("company_name") or f"{query.get('first_name', '')} {query.get('last_name', '')}".strip()
-            
+
             new_entity = models.MonitoredEntity(
                 user_id=current_user.username,
                 customer_ref=screening_id,
@@ -690,8 +692,23 @@ async def toggle_monitoring(
             )
             db.add(new_entity)
             enabled = True
+        action = "monitoring_enabled"
+        action_desc = "Enabled ongoing monitoring"
 
+    # Create Audit Log Entry
+    audit_log = models.AuditLog(
+        user_id=current_user.username,
+        action=action,
+        resource=f"screening:{screening_id}",
+        success=True,
+        details={
+            "monitoring_enabled": enabled,
+            "action_description": action_desc
+        }
+    )
+    db.add(audit_log)
     db.commit()
+    
     return {"message": "Monitoring status updated successfully", "monitoring_enabled": enabled}
 
 @router.post("/{screening_id}/review", response_model=dict)
@@ -742,16 +759,18 @@ async def review_screening(
                 flag_modified(result, "all_matches")
                 
                 # Audit individual match decision
+                match_id_display = matches[idx].get("match_id") or f"M-{idx + 1}"
                 audit = models.AuditLog(
                     user_id=current_user.username,
                     action="MATCH_DECISION",
                     resource=f"screening:{screening_id}",
                     success=True,
                     details={
-                        "match_id": request.match_id,
+                        "match_id": match_id_display,
+                        "match_entity_id": request.match_id,
                         "match_name": match_caption,
                         "new_status": request.match_status,
-                        "message": f"Marked match '{match_caption}' as {request.match_status.replace('_', ' ')}"
+                        "message": f"Marked Match #{match_id_display} '{match_caption}' as {request.match_status.replace('_', ' ')}"
                     }
                 )
                 db.add(audit)
@@ -869,22 +888,22 @@ async def get_screening_history(
 class MatchDecisionRequest(BaseModel):
     status: str
     note: Optional[str] = None
+    match_number: Optional[str] = None  # Match number like "M-1", "M-2" (preferred)
+    entity_id: Optional[str] = None  # For backward compatibility
 
-@router.post("/{screening_id}/matches/{entity_id}/decision")
+@router.post("/{screening_id}/matches/{match_id}/decision")
 async def update_match_decision(
     screening_id: str,
-    entity_id: str,
+    match_id: str,
     req: MatchDecisionRequest,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user)
 ):
     try:
         from sqlalchemy.orm.attributes import flag_modified
-        import hashlib
-        import uuid as uuid_module
-
-        db_screening = db.query(models.ScreeningResult).filter(models.ScreeningResult.id == screening_id).first()
         
+        db_screening = db.query(models.ScreeningResult).filter(models.ScreeningResult.id == screening_id).first()
+
         # If not found, try to find by Screening.id (string) and get the ScreeningResult
         if not db_screening:
             screening = db.query(models.Screening).filter(models.Screening.id == screening_id).first()
@@ -893,86 +912,96 @@ async def update_match_decision(
                 results = db.query(models.ScreeningResult).filter(
                     models.ScreeningResult.screening_id == screening_id
                 ).all()
-                
-                # Find the result that contains this entity_id in its matches
+
+                # Find the result that contains this match_id in its matches
                 for result in results:
                     matches = result.all_matches or []
                     for m in matches:
-                        if m.get('entity_id') == entity_id:
+                        if m.get('match_id') == match_id:
                             db_screening = result
                             break
                     if db_screening:
                         break
-            
+
             if not db_screening:
                 raise HTTPException(status_code=404, detail="Screening or match not found")
 
         matches = db_screening.all_matches or []
         found = False
-        target_caption = entity_id
-        
+        match_index = -1
+        target_caption = match_id
+
         # Map status to display-friendly decision names
         decision_display_names = {
             'matched': 'True Match',
             'false_positive': 'False Positive'
         }
 
-        # First try to match by entity_id
-        for m in matches:
-            if m.get('entity_id') == entity_id:
+        # Determine which identifier to use (prioritize match_number from request body)
+        # Priority: req.match_number > URL match_id parameter > req.entity_id
+        primary_identifier = req.match_number or match_id
+
+        # Try to match by match_id first (M-1, M-2, etc.) - preferred method
+        for idx, m in enumerate(matches):
+            if m.get('match_id') == primary_identifier:
                 m['decision'] = decision_display_names.get(req.status, req.status)
                 m['decision_note'] = req.note
                 m['decision_author'] = current_user.username
                 m['decision_date'] = datetime.datetime.utcnow().isoformat()
-                target_caption = m.get('caption', entity_id)
+                target_caption = m.get('caption', primary_identifier)
+                match_index = idx
                 found = True
                 break
 
-        # Fallback: If not found by entity_id, try to match by caption/name
-        # This handles cases where entity_id was empty or generated from caption
-        if not found:
-            for m in matches:
-                caption = m.get('caption', '')
-                # Check if entity_id matches the caption-based ID or is the caption itself
-                if caption and (entity_id == caption or entity_id == f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"):
-                    # Ensure entity_id is set
-                    if not m.get('entity_id'):
-                        m['entity_id'] = f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"
-
+        # Fallback: Try to match by entity_id (for backward compatibility)
+        if not found and (req.entity_id or primary_identifier != match_id):
+            entity_identifier = req.entity_id or primary_identifier
+            for idx, m in enumerate(matches):
+                if m.get('entity_id') == entity_identifier:
                     m['decision'] = decision_display_names.get(req.status, req.status)
                     m['decision_note'] = req.note
                     m['decision_author'] = current_user.username
                     m['decision_date'] = datetime.datetime.utcnow().isoformat()
-                    target_caption = caption
-                    entity_id = m['entity_id']
+                    target_caption = m.get('caption', entity_identifier)
+                    match_index = idx
                     found = True
                     break
 
-        # Final fallback: If still not found and entity_id looks like a caption (not a UUID or match- ID)
-        if not found and not entity_id.startswith('match-') and not entity_id.startswith('Q') and '-' not in entity_id:
-            # Treat entity_id as a caption/name
-            for m in matches:
-                if m.get('caption') == entity_id or m.get('name') == entity_id:
-                    # Generate entity_id if missing
-                    if not m.get('entity_id'):
-                        caption = m.get('caption', entity_id)
-                        m['entity_id'] = f"match-{hashlib.md5(caption.encode()).hexdigest()[:12]}"
-
+        # Second fallback: Try URL match_id parameter if it's different from primary_identifier
+        if not found and primary_identifier != match_id:
+            for idx, m in enumerate(matches):
+                if m.get('match_id') == match_id:
                     m['decision'] = decision_display_names.get(req.status, req.status)
                     m['decision_note'] = req.note
                     m['decision_author'] = current_user.username
                     m['decision_date'] = datetime.datetime.utcnow().isoformat()
-                    target_caption = m.get('caption', entity_id)
-                    entity_id = m['entity_id']
+                    target_caption = m.get('caption', match_id)
+                    match_index = idx
+                    found = True
+                    break
+
+        # Third fallback: Try URL match_id as entity_id
+        if not found:
+            for idx, m in enumerate(matches):
+                if m.get('entity_id') == match_id:
+                    m['decision'] = decision_display_names.get(req.status, req.status)
+                    m['decision_note'] = req.note
+                    m['decision_author'] = current_user.username
+                    m['decision_date'] = datetime.datetime.utcnow().isoformat()
+                    target_caption = m.get('caption', match_id)
+                    match_index = idx
                     found = True
                     break
 
         if not found:
-            raise HTTPException(status_code=404, detail="Match not found in screening")
+            raise HTTPException(status_code=404, detail=f"Match '{primary_identifier}' not found in screening")
 
         db_screening.all_matches = matches
         flag_modified(db_screening, "all_matches")
-        
+
+        # Display match_id in audit log
+        match_id_display = matches[match_index].get('match_id') if match_index >= 0 else match_id
+
         # User Action Audit Log
         log = models.AuditLog(
             user_id=current_user.username,
@@ -980,7 +1009,8 @@ async def update_match_decision(
             resource=f"screening:{screening_id}",
             success=True,
             details={
-                "entity_id": entity_id,
+                "match_id": match_id_display,
+                "match_index": match_index,
                 "caption": target_caption,
                 "new_status": req.status,
                 "note": req.note

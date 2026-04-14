@@ -5,8 +5,8 @@ from typing import Optional, Dict, Any, List
 class BulkJobResponse(BaseModel):
     id: str
     filename: str
-    total_rows: int
-    processed_rows: int
+    total: int  # Frontend expects 'total'
+    processed: int  # Frontend expects 'processed'
     status: str
     created_at: datetime
     completed_at: Optional[datetime] = None
@@ -20,7 +20,7 @@ class BulkJobStatus(BaseModel):
     id: str
     filename: str
     status: str
-    progress: float # 0.0 to 1.0
+    progress: float  # 0.0 to 1.0
     processed: int
     total: int
     results_summary: Optional[Dict[str, Any]] = None

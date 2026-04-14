@@ -13,7 +13,7 @@ from ..models.models import BulkJob, User
 from ..services.screening import perform_screening
 from ..schemas.screening import (
     ScreeningRequest, IndividualScreenRequest, EntityScreenRequest,
-    Algorithm, ScreeningType
+    Algorithm, ScreeningType, RiskLevel
 )
 from ..services.monitoring import check_monitored_entities
 from ..services import notification_service
@@ -37,158 +37,195 @@ def process_ongoing_monitoring():
         db.close()
 
 @celery_app.task(name="app.workers.process_bulk_screening")
-def process_bulk_screening(job_id: str, file_path: str, user_id: str):
+def process_bulk_screening(job_id, file_path, user_id):
     """
     Background task to process a CSV/Excel file for bulk screening.
     """
-    db: Session = SessionLocal()
-    job = db.query(BulkJob).filter(BulkJob.id == job_id).first()
-    if not job:
-        print(f"Bulk job {job_id} not found")
-        db.close()
-        return
-
+    db = SessionLocal()
     try:
+        print(f"[DEBUG] Starting bulk screening job {job_id} for user {user_id}")
+        print(f"[DEBUG] File path: {file_path}")
+        
+        job = db.query(BulkJob).filter(BulkJob.id == job_id).first()
+        if not job:
+            print(f"[DEBUG] Job {job_id} not found in database")
+            return
+
         job.status = "processing"
         db.commit()
+        print(f"[DEBUG] Job status set to 'processing'")
 
-        # Load file
-        if file_path.endswith('.csv'):
-            try:
-                # Use engine='python' and sep=None to auto-detect delimiters (comma, semicolon, tab)
+        # Load file safely
+        try:
+            print(f"[DEBUG] Loading file: {file_path}")
+            if file_path.endswith('.csv'):
                 df = pd.read_csv(file_path, encoding='utf-8', sep=None, engine='python', on_bad_lines='warn')
-            except Exception:
-                print("UTF-8 auto-sep failed, trying ISO-8859-1 with auto-sep")
-                try:
-                    df = pd.read_csv(file_path, encoding='iso-8859-1', sep=None, engine='python', on_bad_lines='skip')
-                except Exception as e:
-                    raise ValueError(f"Failed to parse CSV: {str(e)}")
-        elif file_path.endswith(('.xls', '.xlsx')):
-            try:
-                # 1. Try modern engine (standard for .xlsx)
+            elif file_path.endswith(('.xls', '.xlsx')):
                 df = pd.read_excel(file_path, engine='openpyxl')
-            except Exception:
-                try:
-                    # 2. Try legacy engine (required for .xls)
-                    df = pd.read_excel(file_path, engine='xlrd')
-                except Exception:
-                    # 3. Final fallback: Let pandas auto-detect
-                    df = pd.read_excel(file_path)
-        else:
-            raise ValueError("Unsupported file format")
+            else:
+                raise ValueError("Unsupported file format")
+            print(f"[DEBUG] File loaded successfully. Total rows: {len(df)}")
+        except Exception as load_err:
+            print(f"[DEBUG] File loading error: {type(load_err).__name__}: {load_err}")
+            import traceback
+            error_msg = "File loading error: " + str(load_err) + "\n\n" + traceback.format_exc()
+            job.status = "failed"
+            job.error = error_msg
+            db.commit()
+            return
 
-        job.total_rows = len(df)
+        total_rows = len(df)
+        job.total_rows = total_rows
         db.commit()
+        print(f"[DEBUG] Total rows set to {total_rows}")
 
-        # Process rows
+        # Results tracking
+        results = {"high_risk": 0, "medium_risk": 0, "low_risk": 0, "errors": 0}
+
+        # Column mapping
+        cols = {str(c).lower().strip(): c for c in df.columns}
+        name_col = cols.get('name') or cols.get('full name') or cols.get('entity name')
+        type_col = cols.get('type') or cols.get('entity type')
+        ref_col = cols.get('customer_ref') or cols.get('external_id') or cols.get('id')
+        country_col = cols.get('country') or cols.get('nationality')
+        dob_col = cols.get('dob') or cols.get('date of birth')
+        
+        print(f"[DEBUG] Column mapping: name={name_col}, type={type_col}, ref={ref_col}")
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        
-        # Results summary
-        results_summary = {
-            "high_risk": 0,
-            "medium_risk": 0,
-            "low_risk": 0,
-            "errors": 0
-        }
 
-        # Map dataframe columns to screening request
-        cols = {str(c).lower().strip(): c for c in df.columns}
-        
-        for index, row in df.iterrows():
+        # Process each row
+        print(f"[DEBUG] Starting row processing loop")
+        for idx in range(total_rows):
             try:
-                name_col = cols.get('name') or cols.get('full name') or cols.get('entity name')
-                if not name_col:
-                    continue
-                
-                name = str(row[name_col]) if pd.notnull(row[name_col]) else None
-                if not name or name.lower() == 'nan':
+                print(f"[DEBUG] Processing row {idx}")
+                row = df.iloc[idx]
+
+                # Extract name safely
+                if name_col is None or pd.isnull(row.get(name_col)):
+                    print(f"[DEBUG] Row {idx}: No name found, skipping")
+                    results["errors"] += 1
                     continue
 
-                type_col = cols.get('type') or cols.get('entity type')
-                entity_type = str(row[type_col]).lower() if type_col and pd.notnull(row[type_col]) else "individual"
-                
-                cust_ref_col = cols.get('customer_ref') or cols.get('external_id') or cols.get('id')
-                customer_ref = str(row[cust_ref_col]) if cust_ref_col and pd.notnull(row[cust_ref_col]) else f"{job_id}-{index}"
-                
-                country_col = cols.get('country') or cols.get('nationality') or cols.get('jurisdiction')
-                dob_col = cols.get('dob') or cols.get('date of birth') or cols.get('birth_date')
+                name = str(row[name_col]).strip()
+                if not name or name.lower() in ['nan', 'none', '']:
+                    print(f"[DEBUG] Row {idx}: Name is empty/None, skipping")
+                    results["errors"] += 1
+                    continue
 
-                # Build request
+                print(f"[DEBUG] Row {idx}: Processing name='{name}'")
+
+                # Extract type safely
+                entity_type = "individual"
+                if type_col and not pd.isnull(row.get(type_col)):
+                    entity_type = str(row[type_col]).lower().strip()
+
+                # Extract customer ref safely - CRITICAL: use str() on job_id and idx
+                print(f"[DEBUG] Row {idx}: Building customer_ref with job_id type={type(job_id)}, idx type={type(idx)}")
+                customer_ref = str(job_id) + "-" + str(idx)
+                if ref_col and not pd.isnull(row.get(ref_col)):
+                    print(f"[DEBUG] Row {idx}: Using ref_col value: {row[ref_col]}")
+                    customer_ref = str(row[ref_col]).strip()
+                
+                print(f"[DEBUG] Row {idx}: customer_ref = '{customer_ref}'")
+
+                # Extract country and dob safely
+                country = None
+                if country_col and not pd.isnull(row.get(country_col)):
+                    val = str(row[country_col]).strip()
+                    if val.lower() not in ['nan', 'none', '']:
+                        country = val
+
+                dob = None
+                if dob_col and not pd.isnull(row.get(dob_col)):
+                    val = str(row[dob_col]).strip()
+                    if val.lower() not in ['nan', 'none', '']:
+                        dob = val
+
+                # Build screening request
+                print(f"[DEBUG] Row {idx}: Building screening request for entity_type='{entity_type}'")
                 if "entity" in entity_type:
-                    req_data = ScreeningRequest(
-                        entity = EntityScreenRequest(
-                            name = name,
-                            country = str(row[country_col]) if country_col and pd.notnull(row[country_col]) else None
-                        ),
-                        customer_ref = customer_ref,
-                        screening_reason = "bulk_batch",
-                        batch_id = job_id
+                    req = ScreeningRequest(
+                        entity=EntityScreenRequest(name=name, country=country),
+                        customer_ref=customer_ref,
+                        screening_reason="bulk_batch",
+                        batch_id=str(job_id)
                     )
                 else:
-                    req_data = ScreeningRequest(
-                        individual = IndividualScreenRequest(
-                            name = name,
-                            birth_date = str(row[dob_col]) if dob_col and pd.notnull(row[dob_col]) else None,
-                            nationality = str(row[country_col]) if country_col and pd.notnull(row[country_col]) else None
+                    req = ScreeningRequest(
+                        individual=IndividualScreenRequest(
+                            name=name,
+                            birth_date=dob,
+                            nationality=country
                         ),
-                        customer_ref = customer_ref,
-                        screening_reason = "bulk_batch",
-                        batch_id = job_id
+                        customer_ref=customer_ref,
+                        screening_reason="bulk_batch",
+                        batch_id=str(job_id)
                     )
 
-                # Run screening
-                res = loop.run_until_complete(perform_screening(db, user_id, req_data))
-                
-                # Update counters
-                risk = str(res.risk_level.value).lower()
-                summary_key = f"{risk}_risk"
-                if summary_key in results_summary:
-                    results_summary[summary_key] += 1
-                else:
-                    # Fallback if somehow it's just 'high'
-                    results_summary[f"{risk if 'risk' not in risk else risk.split('_')[0]}_risk"] += 1
+                # Execute screening
+                print(f"[DEBUG] Row {idx}: Calling perform_screening")
+                res = loop.run_until_complete(perform_screening(db, user_id, req))
+                print(f"[DEBUG] Row {idx}: Screening completed. risk_level={res.risk_level}")
+                print(f"[DEBUG] Row {idx}: ScreeningResult should now be saved in DB with batch_id={req.batch_id}")
 
-            except Exception as e:
-                print(f"Error processing row {index}: {str(e)}")
-                results_summary["errors"] += 1
+                # Update counters - safely extract risk level
+                try:
+                    # RiskLevel is a str Enum, so .value gives us the string value
+                    raw_risk = res.risk_level
+                    print(f"[DEBUG] Row {idx}: raw_risk type={type(raw_risk)}, value={raw_risk}")
+                    risk_str = raw_risk.value if hasattr(raw_risk, 'value') else str(raw_risk)
+                    risk = risk_str.lower()
+                    key = risk + "_risk"
+                    print(f"[DEBUG] Row {idx}: risk='{risk}', key='{key}'")
+                    results[key] = results.get(key, 0) + 1
+                    print(f"[DEBUG] Row {idx}: Counter updated. results={results}")
+                except Exception as risk_err:
+                    print(f"[DEBUG] Row {idx}: Error processing risk level: {type(risk_err).__name__}: {risk_err}")
+                    import traceback
+                    print(f"[DEBUG] Row {idx}: Risk error traceback: {traceback.format_exc()}")
+                    results["errors"] += 1
+
+            except Exception as row_err:
+                print(f"[DEBUG] Row {idx}: Row processing error: {type(row_err).__name__}: {row_err}")
+                import traceback
+                print(f"[DEBUG] Row {idx}: Row error traceback: {traceback.format_exc()}")
+                results["errors"] = results["errors"] + 1
 
             # Update progress
-            job.processed_rows = index + 1
-            if index % 5 == 0:
+            job.processed_rows = idx + 1
+            if (idx + 1) % 10 == 0:
                 db.commit()
 
+        # Mark complete
+        print(f"[DEBUG] All rows processed. Verifying saved records...")
+        
+        # Verify how many records were actually saved
+        from ..models.models import ScreeningResult
+        saved_count = db.query(ScreeningResult).filter(ScreeningResult.batch_id == str(job_id)).count()
+        print(f"[DEBUG] Verification: Found {saved_count} ScreeningResult records in DB for batch_id={job_id}")
+        print(f"[DEBUG] Expected {total_rows} records based on processed rows")
+        
         job.status = "completed"
         job.completed_at = datetime.datetime.utcnow()
-        job.results_summary = results_summary
+        job.results_summary = results
         db.commit()
-        
-        # Emit notification for bulk completion
-        try:
-            total_matches = results_summary.get("high_risk", 0) + results_summary.get("medium_risk", 0) + results_summary.get("low_risk", 0)
-            notification_service.create_notification(
-                db=db,
-                notification=notification_schemas.NotificationCreate(
-                    user_id=user_id,
-                    title="Bulk Screening Complete",
-                    message=f"Bulk screening '{job.filename}' processed {job.processed_rows} rows. {total_matches} matches found.",
-                    type="screening",
-                    priority="high" if results_summary.get("high_risk", 0) > 0 else "normal",
-                    link=f"/bulk",
-                    metadata_json={"batch_id": job.id, "matches": total_matches}
-                )
-            )
-        except Exception as e:
-            print(f"Failed to create notification for bulk job {job.id}: {e}")
-            
         loop.close()
+        print(f"[DEBUG] Job completed successfully")
 
     except Exception as e:
+        print(f"[DEBUG] Top-level exception: {type(e).__name__}: {e}")
+        import traceback
+        error_detail = str(e) + "\n\n" + traceback.format_exc()
+        print(f"[DEBUG] Full error: {error_detail}")
         job.status = "failed"
-        job.error = str(e)
+        job.error = error_detail
         db.commit()
     finally:
         db.close()
-        # Optionally delete temp file
         if os.path.exists(file_path):
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
