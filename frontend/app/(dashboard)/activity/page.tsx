@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   RefreshCw,
   ArrowRight,
-  UserSearch
+  UserSearch,
+  CheckCheck
 } from "lucide-react";
 import Link from "next/link";
 import styles from "./page.module.css";
@@ -35,7 +36,6 @@ interface Notification {
 
 type FilterType = "all" | "unread" | "risk_alert" | "success" | "info" | "screening" | "monitoring";
 
-// Use Next.js API proxy instead of direct backend calls
 const API_BASE = "/api";
 
 export default function NotificationsCenterPage() {
@@ -53,8 +53,6 @@ export default function NotificationsCenterPage() {
     setError(null);
     
     const token = getToken();
-    console.log('🔔 Fetching notifications, token exists:', !!token);
-    
     if (!token) {
       setError("Authentication required");
       setLoading(false);
@@ -71,24 +69,19 @@ export default function NotificationsCenterPage() {
         url += `&type=${filter}`;
       }
 
-      console.log('🔗 Fetching from URL:', url);
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      console.log('📡 Response status:', res.status);
-      
       if (res.ok) {
         const data = await res.json();
-        console.log('✅ Received', data.length, 'notifications');
         setNotifications(data);
       } else {
         const errorData = await res.json().catch(() => ({}));
-        console.error('❌ API Error:', errorData);
         setError(errorData.detail || "Failed to fetch notifications");
       }
     } catch (err) {
-      console.error("❌ Failed to fetch notifications:", err);
+      console.error("Failed to fetch notifications:", err);
       setError("Network error. Please check your connection.");
     } finally {
       setLoading(false);
@@ -126,8 +119,7 @@ export default function NotificationsCenterPage() {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        const updated = await res.json();
-        setNotifications(prev => prev.map(n => n.id === id ? updated : n));
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
         fetchUnreadCount();
       }
     } catch (err) {
@@ -171,26 +163,22 @@ export default function NotificationsCenterPage() {
     switch(type) {
       case 'risk_alert': 
       case 'high_risk':
-        return <ShieldAlert size={20} />;
+        return <ShieldAlert size={24} />;
       case 'success':
       case 'resolved':
-        return <CheckCircle2 size={20} />;
+        return <CheckCircle2 size={24} />;
       case 'monitoring':
-        return <ShieldCheck size={20} />;
+        return <ShieldCheck size={24} />;
       case 'screening':
-        return <UserSearch size={20} />;
-      case 'info':
-      case 'system':
-        return <Info size={20} />;
+        return <UserSearch size={24} />;
       case 'security':
-        return <AlertTriangle size={20} />;
+        return <AlertTriangle size={24} />;
       default: 
-        return <Bell size={20} />;
+        return <Bell size={24} />;
     }
   };
 
-  const getIconClass = (type: string, priority: string) => {
-    if (priority === 'urgent' || priority === 'high') return styles.iconUrgent;
+  const getIconClass = (type: string) => {
     switch(type) {
       case 'risk_alert':
       case 'high_risk':
@@ -199,10 +187,8 @@ export default function NotificationsCenterPage() {
       case 'resolved':
         return styles.iconSuccess;
       case 'monitoring':
-      case 'screening':
         return styles.iconMonitoring;
-      case 'info':
-      case 'system':
+      case 'screening':
         return styles.iconSystem;
       case 'security':
         return styles.iconSecurity;
@@ -211,38 +197,46 @@ export default function NotificationsCenterPage() {
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    const priorityMap: Record<string, { label: string; className: string }> = {
-      urgent: { label: "Urgent", className: styles.priorityUrgent },
-      high: { label: "High", className: styles.priorityHigh },
-      normal: { label: "Normal", className: styles.priorityNormal },
-      low: { label: "Low", className: styles.priorityLow },
-    };
-    
-    const config = priorityMap[priority] || priorityMap.normal;
-    return <span className={config.className}>{config.label}</span>;
-  };
-
   const formatTimestamp = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Grouping logic
+  const groupedNotifications: { [key: string]: Notification[] } = {
+    "Today": [],
+    "Yesterday": [],
+    "Earlier": []
+  };
+
+  notifications.forEach(n => {
+    const date = new Date(n.created_at);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      groupedNotifications["Today"].push(n);
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      groupedNotifications["Yesterday"].push(n);
+    } else {
+      groupedNotifications["Earlier"].push(n);
+    }
+  });
+
   const filters: { key: FilterType; label: string; icon: React.ReactNode }[] = [
-    { key: "all", label: "All", icon: <Bell size={14} /> },
-    { key: "unread", label: "Unread", icon: <BellOff size={14} /> },
-    { key: "risk_alert", label: "Risk", icon: <AlertTriangle size={14} /> },
-    { key: "success", label: "Success", icon: <CheckCircle2 size={14} /> },
+    { key: "all", label: "All Events", icon: <Bell size={14} /> },
+    { key: "unread", label: "Pending", icon: <BellOff size={14} /> },
+    { key: "risk_alert", label: "Risk Alerts", icon: <AlertTriangle size={14} /> },
+    { key: "screening", label: "Screening", icon: <UserSearch size={14} /> },
     { key: "monitoring", label: "Monitoring", icon: <ShieldCheck size={14} /> },
   ];
 
@@ -250,11 +244,11 @@ export default function NotificationsCenterPage() {
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Notifications</h1>
+          <h1 className={styles.title}>Activity Center</h1>
           <p className={styles.subtitle}>
             {unreadCount > 0 
-              ? `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` 
-              : "All caught up!"}
+              ? `You have ${unreadCount} pending compliance updates across your organization.` 
+              : "Your organization's compliance activities are all clear."}
           </p>
         </div>
         
@@ -263,14 +257,14 @@ export default function NotificationsCenterPage() {
             className={styles.iconControlBtn} 
             onClick={() => fetchNotifications(true)}
             disabled={refreshing}
-            title="Refresh"
+            title="Refresh Feed"
           >
-            <RefreshCw size={16} className={refreshing ? styles.spinning : ""} />
+            <RefreshCw size={20} className={refreshing ? styles.spinning : ""} />
           </button>
           {unreadCount > 0 && (
             <button className={styles.markReadBtn} onClick={markAllRead}>
-              <Check size={14} />
-              Mark all read
+              <CheckCheck size={18} />
+              Mark all as read
             </button>
           )}
         </div>
@@ -295,97 +289,101 @@ export default function NotificationsCenterPage() {
         {loading ? (
           <div className={styles.loadingContainer}>
             <LoadingSpinner />
-            <p>Loading notifications...</p>
+            <p style={{ marginTop: 16 }}>Synchronizing activity logs...</p>
           </div>
         ) : error ? (
           <div className={styles.errorContainer}>
             <AlertTriangle size={48} className={styles.errorIcon} />
             <p className={styles.errorText}>{error}</p>
-            <button 
-              className={styles.retryBtn}
-              onClick={() => fetchNotifications(true)}
-            >
-              Retry
+            <button className={styles.retryBtn} onClick={() => fetchNotifications(true)}>
+              Retry Connection
             </button>
           </div>
         ) : notifications.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
-              {filter === "unread" ? <BellOff size={64} /> : <Bell size={64} />}
+              <BellOff size={40} />
             </div>
             <h3 className={styles.emptyTitle}>
-              {filter === "unread" ? "No unread notifications" : "No notifications yet"}
+              {filter === "unread" ? "All Clear!" : "Desk is Clean"}
             </h3>
             <p className={styles.emptyText}>
               {filter === "unread" 
-                ? "You're all caught up! New notifications will appear here." 
-                : "We'll notify you when there are updates to your compliance screenings."}
+                ? "No unread alerts. Your investigative work is fully up to date." 
+                : "No screening or monitoring activities have been logged yet."}
             </p>
           </div>
         ) : (
-          notifications.map((n) => (
-            <div 
-              key={n.id} 
-              className={`${styles.notificationCard} ${!n.is_read ? styles.notificationUnread : ""}`}
-            >
-              <div className={`${styles.iconWrapper} ${getIconClass(n.type, n.priority)}`}>
-                {getIcon(n.type)}
-              </div>
-              
-              <div className={styles.notificationContent}>
-                <div className={styles.notificationHeader}>
-                  <h3 className={styles.notificationTitle}>{n.title}</h3>
-                  <div className={styles.notificationMeta}>
-                    {getPriorityBadge(n.priority)}
-                    <span className={styles.timestamp}>
-                      <Clock size={12} />
-                      {formatTimestamp(n.created_at)}
-                    </span>
-                  </div>
-                </div>
-                <p className={styles.notificationMessage}>{n.message}</p>
-              </div>
+          Object.entries(groupedNotifications).map(([section, items]) => (
+            items.length > 0 && (
+              <div key={section} className={styles.dateSection}>
+                <div className={styles.sectionHeader}>{section}</div>
+                {items.map((n) => (
+                  <div 
+                    key={n.id} 
+                    className={`${styles.notificationCard} ${!n.is_read ? styles.notificationUnread : ""}`}
+                    onClick={() => !n.is_read && markAsRead(n.id)}
+                  >
+                    <div className={`${styles.iconWrapper} ${getIconClass(n.type)}`}>
+                      {getIcon(n.type)}
+                    </div>
+                    
+                    <div className={styles.notificationContent}>
+                      <div className={styles.notificationHeader}>
+                        <h3 className={styles.notificationTitle}>{n.title}</h3>
+                        <div className={styles.notificationMeta}>
+                          <span className={styles.timestamp}>
+                            <Clock size={12} />
+                            {formatTimestamp(n.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      <p className={styles.notificationMessage}>{n.message}</p>
+                    </div>
 
-              <div className={styles.notificationActions}>
-                {!n.is_read && (
-                  <button
-                    className={styles.actionBtn}
-                    onClick={() => markAsRead(n.id)}
-                    title="Mark as read"
-                  >
-                    <Check size={16} />
-                  </button>
-                )}
-                
-                {n.link && (
-                  <Link 
-                    href={n.link} 
-                    className={styles.actionBtn}
-                    title="View details"
-                  >
-                    <ArrowRight size={16} />
-                  </Link>
-                )}
-                
-                {n.metadata_json?.screening_id && (
-                  <Link 
-                    href={`/screenings/${n.metadata_json.screening_id}`} 
-                    className={styles.actionBtn}
-                    title="View screening"
-                  >
-                    <ExternalLink size={16} />
-                  </Link>
-                )}
-                
-                <button
-                  className={styles.actionBtn}
-                  onClick={() => deleteNotification(n.id)}
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
+                    <div className={styles.notificationActions}>
+                      {!n.is_read && (
+                        <button
+                          className={styles.actionBtn}
+                          onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}
+                          title="Mark as read"
+                        >
+                          <Check size={18} />
+                        </button>
+                      )}
+                      
+                      {n.link && (
+                        <Link 
+                          href={n.link} 
+                          className={styles.actionBtn}
+                          title="View Intelligence"
+                        >
+                          <ArrowRight size={18} />
+                        </Link>
+                      )}
+                      
+                      {n.metadata_json?.screening_id && (
+                        <Link 
+                          href={`/screenings/${n.metadata_json.screening_id}`} 
+                          className={styles.actionBtn}
+                          title="Screening Report"
+                        >
+                          <ExternalLink size={18} />
+                        </Link>
+                      )}
+                      
+                      <button
+                        className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                        onClick={(e) => { e.stopPropagation(); deleteNotification(n.id); }}
+                        title="Delete Log"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
+            )
           ))
         )}
       </section>

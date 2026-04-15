@@ -19,15 +19,25 @@ import {
   Code,
   Eye,
   EyeOff,
-  MessageSquare
+  MessageSquare,
+  Shield,
+  Activity,
+  Fingerprint,
+  Mail,
+  Smartphone,
+  ChevronRight,
+  UserPlus,
+  Trash2,
+  AlertCircle
 } from "lucide-react";
 import styles from "./page.module.css";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
+type TabType = "organization" | "security" | "users" | "integrations" | "billing";
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("organization");
-  const [configs, setConfigs] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<TabType>("organization");
   const [loading, setLoading] = useState(true);
   const [orgData, setOrgData] = useState({
     name: "Cellbunq Compliance",
@@ -37,172 +47,275 @@ export default function SettingsPage() {
   });
   const [showApiKey, setShowApiKey] = useState(false);
 
-  const fetchConfigs = async () => {
-    const token = localStorage.getItem("amltab_token");
-    try {
-      const res = await fetch(`${API_URL}/integrations/configs`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setConfigs(await res.json());
-      }
-    } catch (err) {
-      console.error("Failed to fetch integration configs:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const sidebarTabs = [
+    { id: "organization", label: "Organization", icon: Building2 },
+    { id: "security", label: "Security & Privacy", icon: ShieldCheck },
+    { id: "users", label: "Teams & Access", icon: Users },
+    { id: "integrations", label: "Integrations", icon: Zap },
+    { id: "billing", label: "Billing & Plans", icon: CreditCard },
+  ];
 
-  useEffect(() => {
-    fetchConfigs();
-  }, []);
-
-  const renderTabContent = () => {
-    switch (activeTab) {
+  const renderContent = () => {
+    switch(activeTab) {
       case "organization":
         return (
-          <div className={styles.section}>
+          <>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Organization Profile</h2>
-              <p className={styles.sectionDesc}>Manage your primary organization identity and access controls.</p>
-            </div>
-            <div className={styles.card}>
-              <div className={styles.formGrid}>
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>Organization Name</label>
-                  <input type="text" className={styles.input} value={orgData.name} onChange={(e) => setOrgData({...orgData, name: e.target.value})} />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>Corporate Domain</label>
-                  <input type="text" className={styles.input} value={orgData.domain} onChange={(e) => setOrgData({...orgData, domain: e.target.value})} />
-                </div>
-                <div className={styles.inputGroup}>
-                  <label className={styles.label}>Compliance Contact Email</label>
-                  <input type="email" className={styles.input} value={orgData.contact_email} onChange={(e) => setOrgData({...orgData, contact_email: e.target.value})} />
-                </div>
-              </div>
-              <button className={styles.saveBtn}>Update Profile</button>
+              <h1 className={styles.pageTitle}>Organization Control</h1>
+              <p className={styles.pageSubtitle}>Manage your institutional identity and compliance parameters.</p>
             </div>
 
-            <div className={styles.sectionHeader} style={{ marginTop: '32px' }}>
-              <h2 className={styles.sectionTitle}>Developer Credentials</h2>
-              <p className={styles.sectionDesc}>API keys for direct programmatic access to the screening engine.</p>
-            </div>
-            <div className={styles.card}>
-                <div className={styles.inputGroup}>
-                   <label className={styles.label}>Live API Key</label>
-                   <div style={{ display: 'flex', gap: '12px' }}>
-                     <div className={styles.passwordWrapper}>
-                       <input 
-                         type={showApiKey ? "text" : "password"} 
-                         className={styles.input} 
-                         value={orgData.api_key} 
-                         readOnly 
-                       />
-                       <button 
-                         type="button" 
-                         className={styles.eyeBtn}
-                         onClick={() => setShowApiKey(!showApiKey)}
-                         aria-label={showApiKey ? "Hide API key" : "Show API key"}
-                       >
-                         {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                       </button>
-                     </div>
-                     <button className={styles.saveBtn} style={{ backgroundColor: '#1E293B', color: '#94A3B8' }}>Rotate Key</button>
-                   </div>
+            <div className={styles.settingsCard}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <h3 className={styles.cardTitle}>General Information</h3>
+                  <p className={styles.cardDesc}>Global configuration for your screening reports.</p>
                 </div>
+              </div>
+
+              <div className={styles.formGrid}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}><Building2 size={14} /> Organization Name</label>
+                  <input type="text" className={styles.input} value={orgData.name} />
+                </div>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}><Globe size={14} /> Domain</label>
+                  <input type="text" className={styles.input} value={orgData.domain} />
+                </div>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}><Mail size={14} /> Compliance Email</label>
+                  <input type="email" className={styles.input} value={orgData.contact_email} />
+                </div>
+                <div className={styles.inputGroup}>
+                   <label className={styles.label}><Lock size={14} /> Access Level</label>
+                   <input type="text" className={styles.input} value="Institutional (Level 3)" readOnly />
+                </div>
+              </div>
+              <button className={styles.saveBtn}><Save size={18} /> Save Changes</button>
             </div>
-          </div>
+
+            <div className={styles.settingsCard}>
+              <div className={styles.cardHeader}>
+                <div>
+                  <h3 className={styles.cardTitle}>Identity & Keys</h3>
+                  <p className={styles.cardDesc}>Sensitive programmatic access credentials.</p>
+                </div>
+                <div className={`${styles.securityStatus} ${styles.statusGood}`}>
+                   <Shield size={12} /> Encrypted
+                </div>
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.label}>Production API Secret</label>
+                <div className={styles.apiKeyWrapper}>
+                  <input 
+                    type={showApiKey ? "text" : "password"} 
+                    className={styles.apiInput} 
+                    value={orgData.api_key} 
+                    readOnly
+                  />
+                  <button className={styles.eyeBtn} onClick={() => setShowApiKey(!showApiKey)}>
+                    {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <p className={styles.cardDesc}>Root access key. Rotate immediately if compromised.</p>
+              </div>
+              <button className={`${styles.saveBtn} ${styles.secondaryBtn}`}>Rotate Security Key</button>
+            </div>
+          </>
         );
-      case "integrations":
+
+      case "security":
         return (
-          <div className={styles.section}>
+          <>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Third-party Integrations</h2>
-              <p className={styles.sectionDesc}>Sync compliance screenings directly into your CRM or internal systems.</p>
+              <h1 className={styles.pageTitle}>Security Workspace</h1>
+              <p className={styles.pageSubtitle}>Protect your compliance environment with advanced security controls.</p>
             </div>
-            <div className={styles.integrationGrid}>
-               {[
-                 { name: "Salesforce", icon: <Database size={24} />, status: "Connected", desc: "Sync matches to account profiles." },
-                 { name: "HubSpot", icon: <Zap size={24} />, status: "Configure", desc: "Real-time ticket creation for risk hits." },
-                 { name: "Slack", icon: <MessageSquare size={24} />, status: "Not Active", desc: "Dispatch critical alerts to channels." },
-                 { name: "Webhooks", icon: <Code size={24} />, status: "2 Endpoints", desc: "Standard REST notification delivery." }
-               ].map((integration) => (
-                 <div key={integration.name} className={styles.integrationCard}>
-                    <div className={styles.integrationHeader}>
-                       <div className={styles.iconBox}>{integration.icon}</div>
-                       <span style={{ fontSize: '0.75rem', fontWeight: 700, color: integration.status === 'Connected' ? '#4ADE80' : '#64748B' }}>{integration.status}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                       <span style={{ fontWeight: 700, color: '#fff' }}>{integration.name}</span>
-                       <p style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{integration.desc}</p>
-                    </div>
-                    <button className={styles.btn} style={{ marginTop: 'auto', backgroundColor: '#1E293B', border: 'none', padding: '8px', color: '#fff', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' }}>Manage Setup</button>
-                 </div>
-               ))}
+
+            <div className={styles.securityBanner}>
+               <ShieldCheck size={40} color="var(--primary)" />
+               <div>
+                  <h3 className={styles.cardTitle}>Security Health: 85/100</h3>
+                  <p className={styles.cardDesc}>Your workspace is well protected. Enabling 2FA would increase your score.</p>
+               </div>
             </div>
-          </div>
+
+            <div className={styles.settingsCard}>
+              <h3 className={styles.cardTitle}>Authentication</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <Smartphone size={24} color="var(--secondary)" />
+                    <div>
+                      <p style={{ fontWeight: 700, margin: 0 }}>Two-Factor Authentication (2FA)</p>
+                      <p className={styles.cardDesc}>Add an extra layer of security to your account.</p>
+                    </div>
+                  </div>
+                  <button className={`${styles.saveBtn} ${styles.secondaryBtn}`}>Set Up 2FA</button>
+                </div>
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <Fingerprint size={24} color="var(--secondary)" />
+                    <div>
+                      <p style={{ fontWeight: 700, margin: 0 }}>Passkeys / Biometrics</p>
+                      <p className={styles.cardDesc}>Login using TouchID, FaceID or hardware keys.</p>
+                    </div>
+                  </div>
+                  <div className={`${styles.securityStatus} ${styles.statusWarning}`}>Disabled</div>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.settingsCard}>
+              <h3 className={styles.cardTitle}>Active Sessions</h3>
+              <div className={styles.tableContainer}>
+                 <table className={styles.userTable}>
+                    <thead>
+                      <tr>
+                        <th>Device / Browser</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <div style={{ fontWeight: 700 }}>MacBook Pro • Chrome</div>
+                          <p className={styles.cardDesc}>Current Session</p>
+                        </td>
+                        <td>Dhaka, Bangladesh</td>
+                        <td><span className={`${styles.securityStatus} ${styles.statusGood}`}>Active</span></td>
+                        <td>-</td>
+                      </tr>
+                    </tbody>
+                 </table>
+              </div>
+            </div>
+          </>
         );
+
       case "users":
         return (
-          <div className={styles.section}>
+          <>
             <div className={styles.sectionHeader}>
-              <h2 className={styles.sectionTitle}>Analyst Directory</h2>
-              <p className={styles.sectionDesc}>Manage access permissions and compliance officer roles.</p>
+              <h1 className={styles.pageTitle}>Teams & Roles</h1>
+              <p className={styles.pageSubtitle}>Manage investigator permissions and institutional access hierarchy.</p>
             </div>
-            <div className={styles.card} style={{ padding: '0', overflow: 'hidden' }}>
-               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+
+            <div className={styles.settingsCard} style={{ padding: '0', overflow: 'hidden' }}>
+              <div className={styles.tableContainer}>
+                <table className={styles.userTable}>
                   <thead>
                     <tr>
-                      <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', background: 'rgba(15,23,42,0.5)' }}>User</th>
-                      <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', background: 'rgba(15,23,42,0.5)' }}>Role</th>
-                      <th style={{ textAlign: 'left', padding: '16px 24px', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', background: 'rgba(15,23,42,0.5)' }}>Status</th>
-                      <th style={{ textAlign: 'right', padding: '16px 24px', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', background: 'rgba(15,23,42,0.5)' }}>Actions</th>
+                      <th>Analyst</th>
+                      <th>Role & Permissions</th>
+                      <th>Last Active</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      { name: "Arman Hossain", role: "Compliance Lead", status: "Active" },
-                      { name: "Jessica Compliance", role: "Junior Analyst", status: "Active" },
-                      { name: "System Automator", role: "API Service", status: "Active" }
-                    ].map((user) => (
-                      <tr key={user.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding: '16px 24px', color: '#fff', fontWeight: 600 }}>{user.name}</td>
-                        <td style={{ padding: '16px 24px', color: '#94A3B8', fontSize: '0.875rem' }}>{user.role}</td>
-                        <td style={{ padding: '16px 24px' }}>
-                           <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', backgroundColor: 'rgba(34, 197, 94, 0.1)', color: '#4ADE80', fontWeight: 700 }}>{user.status}</span>
+                      { name: "Arman Hossain", email: "arman@cellbunq.com", role: "Super Admin", active: "Just now", initial: "AH" },
+                      { name: "Jessica Smith", email: "j.smith@cellbunq.com", role: "Compliance Officer", active: "2h ago", initial: "JS" },
+                      { name: "API Service Unit", email: "svc-bot@internal.id", role: "Programmatic Access", active: "12m ago", initial: "SV" }
+                    ].map(user => (
+                      <tr key={user.email}>
+                        <td>
+                          <div className={styles.userInfo}>
+                             <div className={styles.userAvatar}>{user.initial}</div>
+                             <div>
+                               <div style={{ fontWeight: 700 }}>{user.name}</div>
+                               <div className={styles.userEmail}>{user.email}</div>
+                             </div>
+                          </div>
                         </td>
-                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                           <button style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}>Edit</button>
+                        <td><span className={styles.roleBadge}>{user.role}</span></td>
+                        <td className={styles.cardDesc}>{user.active}</td>
+                        <td style={{ textAlign: 'right' }}>
+                           <button style={{ background: 'none', border: 'none', color: 'var(--secondary)', cursor: 'pointer', padding: '8px' }}><Trash2 size={18} /></button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
-               </table>
+                </table>
+              </div>
             </div>
-            <button className={styles.saveBtn} style={{ gap: '8px', display: 'flex', alignItems: 'center' }}><Plus size={18} /> Invite New Analyst</button>
+            <button className={styles.saveBtn}><UserPlus size={18} /> Invite Investigator</button>
+          </>
+        );
+
+      case "integrations":
+        return (
+          <>
+            <div className={styles.sectionHeader}>
+              <h1 className={styles.pageTitle}>Ecosystem Connect</h1>
+              <p className={styles.pageSubtitle}>Bridge your screening engine with external platforms and tools.</p>
+            </div>
+
+            <div className={styles.integrationGrid}>
+               {[
+                 { name: "Salesforce", icon: <Database />, status: "Connected", desc: "Automated match synchronization to account records." },
+                 { name: "Slack", icon: <MessageSquare />, status: "Pending", desc: "Dispatch real-time risk alerts to compliance channels." },
+                 { name: "HubSpot", icon: <Zap />, status: "Configure", desc: "Enrich CRM contacts with AML screening metadata." },
+                 { name: "Webhooks", icon: <Code />, status: "Active (2)", desc: "Programmatic notification delivery to internal endpoints." }
+               ].map(item => (
+                 <div key={item.name} className={styles.integrationCard}>
+                    <div className={styles.cardHeader}>
+                      <div className={styles.iconBox}>{item.icon}</div>
+                      <span className={`${styles.securityStatus} ${item.status === 'Connected' || item.status.includes('Active') ? styles.statusGood : styles.statusWarning}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className={styles.cardTitle}>{item.name}</h4>
+                      <p className={styles.cardDesc}>{item.desc}</p>
+                    </div>
+                    <button className={`${styles.saveBtn} ${styles.secondaryBtn} ${styles.fullWidth}`} style={{ width: '100%', justifyContent: 'center' }}>
+                      Configure Sync
+                    </button>
+                 </div>
+               ))}
+            </div>
+          </>
+        );
+
+      default:
+        return (
+          <div className={styles.settingsCard} style={{ alignItems: 'center', padding: '80px' }}>
+            <CreditCard size={48} color="var(--secondary)" opacity={0.3} />
+            <h3 className={styles.cardTitle}>Institutional Billing</h3>
+            <p className={styles.cardDesc}>Billing management is restricted to financial administrators.</p>
+            <button className={styles.saveBtn} style={{ marginTop: '12px' }}>Request Access</button>
           </div>
         );
-      default:
-        return null;
     }
   };
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Hub Settings</h1>
-        <nav className={styles.tabNav}>
-          <button className={`${styles.tabBtn} ${activeTab === 'organization' ? styles.tabBtnActive : ''}`} onClick={() => setActiveTab('organization')}>Organization</button>
-          <button className={`${styles.tabBtn} ${activeTab === 'integrations' ? styles.tabBtnActive : ''}`} onClick={() => setActiveTab('integrations')}>Integrations</button>
-          <button className={`${styles.tabBtn} ${activeTab === 'users' ? styles.tabBtnActive : ''}`} onClick={() => setActiveTab('users')}>Analysts & RBAC</button>
-          <button className={`${styles.tabBtn} ${activeTab === 'billing' ? styles.tabBtnActive : ''}`} onClick={() => setActiveTab('billing')}>Billing & Plans</button>
-        </nav>
-      </header>
+      <aside className={styles.sidebar}>
+        <div className={styles.sidebarTitle}>Control Plane</div>
+        {sidebarTabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`${styles.sideTab} ${activeTab === tab.id ? styles.sideTabActive : ""}`}
+            onClick={() => setActiveTab(tab.id as TabType)}
+          >
+            <tab.icon size={18} />
+            {tab.label}
+          </button>
+        ))}
+        
+        <div className={styles.sidebarTitle} style={{ marginTop: 'auto', paddingTop: '40px' }}>Support</div>
+        <button className={styles.sideTab}><Activity size={18} /> API Health</button>
+        <button className={styles.sideTab}><Server size={18} /> Infrastructure</button>
+      </aside>
 
-      <div className={styles.content}>
-        {renderTabContent()}
-      </div>
+      <main className={styles.contentArea}>
+        {renderContent()}
+      </main>
     </div>
   );
 }

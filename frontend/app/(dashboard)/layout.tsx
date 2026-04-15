@@ -103,6 +103,7 @@ export default function DashboardLayout({
     { href: "/bulk", label: "Bulk Screening", icon: Layers },
     { href: "/cases", label: "Compliance & Case Management", icon: Inbox },
     { href: "/monitoring", label: "Monitoring", icon: Bell },
+    { href: "/activity", label: "Activity Center", icon: Activity },
     { href: "/history/all", label: "History & Audit", icon: History },
     { href: "/api-docs", label: "API Documentation", icon: BookOpen },
     { href: "/settings", label: "Settings", icon: Settings },
