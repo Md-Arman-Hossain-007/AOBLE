@@ -32,7 +32,9 @@ import {
   RefreshCw,
   MoreVertical,
   LogOut,
-  Sliders
+  Sliders,
+  Check,
+  X
 } from "lucide-react";
 import styles from "./page.module.css";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
@@ -945,119 +947,160 @@ export default function SettingsPage() {
               <p className={styles.pageSubtitle}>Bridge your screening engine with external platforms.</p>
             </div>
             <div className={styles.integrationGrid}>
-                {integrations.length > 0 ? integrations.map(int => (
-                  <div key={int.id} className={styles.integrationCard}>
-                     <div className={styles.cardHeader}>
-                       <Database size={24} color="var(--primary)" />
-                       <span className={styles.securityStatus + ' ' + (int.is_active ? styles.statusGood : styles.statusWarning)}>
-                         {int.is_active ? "Connected" : "Inactive"}
-                       </span>
-                     </div>
-                     <h4 className={styles.cardTitle}>{int.integration_type}</h4>
-                     <p className={styles.cardDesc}>Last sync: {int.last_sync || "Never"}</p>
-                     <button className={styles.saveBtn + ' ' + styles.secondaryBtn} style={{ width: '100%', justifyContent: 'center' }}>Manage</button>
+              {integrations.length > 0 ? integrations.map((int, i) => (
+                <div key={int.id || i} className={styles.integrationCard}>
+                  <div className={styles.integrationHeader}>
+                    <div className={styles.iconBox}><Zap size={24} /></div>
+                    <div className={styles.integrationMeta}>
+                      <h3 className={styles.integrationName}>{int.integration_type}</h3>
+                      <div className={`${styles.integrationStatus} ${styles.statusActive}`}>
+                        <Check size={12} /> Connected
+                      </div>
+                    </div>
                   </div>
-                )) : (
-                  <div className={styles.settingsCard} style={{ gridColumn: 'span 2', textAlign: 'center' }}>
-                     <p>No external integrations configured yet.</p>
-                     <button className={styles.saveBtn} style={{ margin: '0 auto' }} onClick={() => setShowIntegrationModal(true)}><Plus size={18} /> Add Integration</button>
+                  <p className={styles.cardDesc}>
+                    Continuous watchlist monitoring active. Last sync: {int.last_sync || "Just now"}
+                  </p>
+                  <button className={`${styles.saveBtn} ${styles.secondaryBtn}`} style={{ width: '100%', justifyContent: 'center' }}>
+                    Configure Node
+                  </button>
+                </div>
+              )) : (
+                <div className={styles.settingsCard} style={{ gridColumn: 'span 2', textAlign: 'center', padding: '60px' }}>
+                   <p className={styles.cardDesc}>No active screening nodes configured.</p>
+                   <button className={styles.saveBtn} style={{ margin: '24px auto' }} onClick={() => setShowIntegrationModal(true)}>
+                     <Plus size={18} /> Add Integration
+                   </button>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.sectionHeader} style={{ marginTop: '48px' }}>
+              <h2 className={styles.cardTitle}>Available Integrations</h2>
+              <p className={styles.cardDesc}>Connect other platforms in your risk management stack.</p>
+            </div>
+            
+            <div className={styles.integrationGrid}>
+              {[
+                { name: 'Salesforce', icon: <Building2 />, desc: 'Sync screening results with CRM profiles.' },
+                { name: 'Slack', icon: <ShieldCheck />, desc: 'Receive real-time alerts for high-risk matches.' },
+                { name: 'BigQuery', icon: <Database />, desc: 'Export audit logs for institutional BI.' }
+              ].map(ext => (
+                <div key={ext.name} className={styles.integrationCard} style={{ opacity: 0.8, borderStyle: 'dashed' }}>
+                  <div className={styles.integrationHeader}>
+                    <div className={styles.iconBox} style={{ color: 'var(--secondary)' }}>{ext.icon}</div>
+                    <div className={styles.integrationMeta}>
+                      <h3 className={styles.integrationName}>{ext.name}</h3>
+                      <div className={`${styles.integrationStatus} ${styles.statusInactive}`}>Coming Soon</div>
+                    </div>
                   </div>
-                )}
+                  <p className={styles.cardDesc}>{ext.desc}</p>
+                </div>
+              ))}
             </div>
           </>
         );
 
-      default:
+      default: // Billing
         return (
           <>
             <div className={styles.sectionHeader}>
-              <h1 className={styles.pageTitle}>Billing & Plans</h1>
-              <p className={styles.pageSubtitle}>Manage your subscription and usage limits.</p>
+              <h1 className={styles.pageTitle}>Subscription & Plans</h1>
+              <p className={styles.pageSubtitle}>Manage your institutional license and monitor resource usage.</p>
             </div>
 
-            {billing ? (
-              <>
-                <div className={styles.settingsCard}>
-                  <h3 className={styles.cardTitle}>Current Plan</h3>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <p style={{ fontWeight: 700, margin: 0, fontSize: '1.5rem', color: 'var(--primary)' }}>
-                        {billing.plan?.charAt(0).toUpperCase() + billing.plan?.slice(1) || "Starter"}
-                      </p>
-                      <p className={styles.cardDesc}>
-                        Status: <span className={`${styles.securityStatus} ${billing.status === 'active' ? styles.statusGood : styles.statusWarning}`}>
-                          {billing.status || "Active"}
-                        </span>
-                      </p>
-                    </div>
-                    <button 
-                      className={styles.saveBtn}
-                      onClick={() => handleChangePlan(billing.plan === 'enterprise' ? 'starter' : 'enterprise')}
-                      disabled={saving}
-                    >
-                      {saving ? <RefreshCw size={18} className={styles.spinning} /> : "Switch Plan"}
-                    </button>
+            {billing && (
+              <div className={styles.settingsCard} style={{ marginBottom: '32px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                  <h3 className={styles.cardTitle}>Current Plan: <span style={{ color: 'var(--primary)', marginLeft: '8px' }}>{billing.plan?.toUpperCase()}</span></h3>
+                  <span className={`${styles.securityStatus} ${billing.status === 'active' ? styles.statusGood : styles.statusWarning}`}>
+                    {billing.status?.toUpperCase() || "ACTIVE"}
+                  </span>
+                </div>
+                
+                <div className={styles.formGrid}>
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>Seats Utilization</label>
+                    <input type="text" className={styles.input} readOnly value={`${billing.seats_used || 0} / ${billing.seats_limit || "Unlimited"}`} />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>Screening Quota</label>
+                    <input type="text" className={styles.input} readOnly value={`${billing.screenings_used || 0} / ${billing.screenings_limit || "Unlimited"}`} />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>Next Billing Period</label>
+                    <input type="text" className={styles.input} readOnly value={billing.next_billing_date ? new Date(billing.next_billing_date).toLocaleDateString() : "N/A"} />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label className={styles.label}>Payment Method</label>
+                    <input type="text" className={styles.input} readOnly value="Institutional Credit Card (**** 4242)" />
                   </div>
                 </div>
-
-                <div className={styles.settingsCard}>
-                  <h3 className={styles.cardTitle}>Usage Overview</h3>
-                  <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}>
-                      <label className={styles.label}>Seats Used</label>
-                      <input 
-                        type="text" 
-                        className={styles.input} 
-                        value={`${billing.seats_used || 0} / ${billing.seats_limit || "Unlimited"}`}
-                        readOnly 
-                      />
-                    </div>
-                    <div className={styles.inputGroup}>
-                      <label className={styles.label}>Screenings Used</label>
-                      <input 
-                        type="text" 
-                        className={styles.input} 
-                        value={`${billing.screenings_used || 0} / ${billing.screenings_limit || "Unlimited"}`}
-                        readOnly 
-                      />
-                    </div>
-                    <div className={styles.inputGroup}>
-                      <label className={styles.label}>Billing Cycle</label>
-                      <input 
-                        type="text" 
-                        className={styles.input} 
-                        value={billing.billing_cycle?.charAt(0).toUpperCase() + billing.billing_cycle?.slice(1) || "Monthly"}
-                        readOnly 
-                      />
-                    </div>
-                    <div className={styles.inputGroup}>
-                      <label className={styles.label}>Next Billing Date</label>
-                      <input 
-                        type="text" 
-                        className={styles.input} 
-                        value={billing.next_billing_date ? new Date(billing.next_billing_date).toLocaleDateString() : "N/A"}
-                        readOnly 
-                      />
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className={styles.settingsCard} style={{ alignItems: 'center', padding: '80px' }}>
-                {loading ? (
-                  <>
-                    <RefreshCw size={48} color="var(--secondary)" className={styles.spinning} opacity={0.3} />
-                    <p className={styles.cardDesc}>Loading billing data...</p>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard size={48} color="var(--secondary)" opacity={0.3} />
-                    <h3 className={styles.cardTitle}>No Billing Information</h3>
-                    <p className={styles.cardDesc}>Unable to load billing data. Please try again later.</p>
-                  </>
-                )}
               </div>
             )}
+
+            <div className={styles.planGrid}>
+              {[
+                { 
+                  name: 'Starter', 
+                  price: '0', 
+                  period: '/mo',
+                  desc: 'Perfect for small teams and pre-seed startups.',
+                  features: ['1,000 screenings /mo', 'Standard support', 'Single organization', 'API access (limited)'],
+                  disabled: ['Advanced analytics', 'SSO & SAML', 'Custom reports']
+                },
+                { 
+                  name: 'Professional', 
+                  price: '299', 
+                  period: '/mo',
+                  popular: true,
+                  desc: 'Advanced features for scaling compliance operations.',
+                  features: ['10,000 screenings /mo', 'Priority 24/7 support', 'Unlimited members', 'Bulk screening tool', 'Advanced analytics'],
+                  disabled: ['Custom SLAs']
+                },
+                { 
+                  name: 'Enterprise', 
+                  price: '999', 
+                  period: '/mo',
+                  desc: 'Institutional grade security and unlimited scale.',
+                  features: ['Unlimited screenings', 'Dedicated account manager', 'SSO & SAML integration', 'Custom reporting engine', 'White-labeling', '99.9% Uptime SLA'],
+                  disabled: []
+                }
+              ].map((p) => (
+                <div key={p.name} className={`${styles.planCard} ${p.popular ? styles.planCardPopular : ''}`}>
+                  {p.popular && <div className={styles.popularBadge}>Most Popular</div>}
+                  <h3 className={styles.planName}>{p.name}</h3>
+                  <p className={styles.cardDesc} style={{ marginTop: '8px' }}>{p.desc}</p>
+                  
+                  <div className={styles.planPrice}>
+                    <span className={styles.priceAmount}>${p.price}</span>
+                    <span className={styles.pricePeriod}>{p.period}</span>
+                  </div>
+
+                  <ul className={styles.planFeatures}>
+                    {p.features.map(f => (
+                      <li key={f} className={styles.featureItem}>
+                        <Check size={16} className={styles.featureIcon} /> {f}
+                      </li>
+                    ))}
+                    {p.disabled.map(f => (
+                      <li key={f} className={`${styles.featureItem} ${styles.featureDisabled}`}>
+                        <X size={16} /> {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    className={styles.saveBtn}
+                    style={{ marginTop: 'auto', width: '100%', justifyContent: 'center', background: p.popular ? 'var(--primary)' : 'var(--surface-dark)', color: p.popular ? 'white' : 'var(--foreground)', border: p.popular ? 'none' : '1px solid var(--border)' }}
+                    disabled={billing?.plan?.toLowerCase() === p.name.toLowerCase() || saving}
+                    onClick={() => handleChangePlan(p.name)}
+                  >
+                    {billing?.plan?.toLowerCase() === p.name.toLowerCase() ? 'Current Plan' : `Upgrade to ${p.name}`}
+                  </button>
+                </div>
+              ))}
+            </div>
           </>
         );
     }

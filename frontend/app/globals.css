@@ -5,6 +5,7 @@
   --foreground: #0f172a;
 
   --primary: #4f46e5;
+  --primary-rgb: 79, 70, 229;
   --primary-hover: #4338ca;
   --primary-light: #e0e7ff;
 
@@ -43,6 +44,7 @@
   --foreground: #f8fafc;
   
   --primary: #6366f1;
+  --primary-rgb: 99, 102, 241;
   --primary-hover: #818cf8;
   --primary-light: rgba(99, 102, 241, 0.15);
   
