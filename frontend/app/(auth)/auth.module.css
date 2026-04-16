@@ -6,7 +6,7 @@
 
 .authLeft {
   flex: 1;
-  background: linear-gradient(135deg, var(--sidebar-bg), var(--primary-light));
+  background: linear-gradient(135deg, var(--primary), #6366f1);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -99,7 +99,9 @@
 }
 
 .formGroup label {
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--foreground);
@@ -126,7 +128,14 @@
 .forgotPassword {
   font-size: 0.8rem;
   color: var(--primary);
-  font-weight: 500;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.forgotPassword:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 .passwordWrapper {
@@ -220,6 +229,7 @@
   text-align: center;
   font-size: 0.9rem;
   color: var(--secondary);
+  font-weight: 500;
 }
 
 .switchAuth a {
