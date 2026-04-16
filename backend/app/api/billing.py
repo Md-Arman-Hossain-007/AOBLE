@@ -9,6 +9,14 @@ from .users import get_current_active_user
 
 router = APIRouter()
 
+def check_admin(user: User) -> None:
+    """Check if user is an admin. Raises HTTPException if not."""
+    if user.role != "Admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Admin privileges required"
+        )
+
 def _get_or_create_subscription(db: Session, org_id: str) -> Subscription:
     """Fetch or seed a default Starter subscription for the org."""
     sub = db.query(Subscription).filter(Subscription.org_id == org_id).first()

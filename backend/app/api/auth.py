@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -11,6 +11,7 @@ import pyotp
 from ..db.session import get_db
 from ..models.models import User, Organization, Subscription
 from ..schemas.user import UserCreate, UserResponse, Token, PasswordResetRequest, PasswordResetConfirm, Enable2FA, Verify2FA
+from ..schemas.organization import OrganizationUpdate
 from ..core.security import (
     authenticate_user, create_access_token, create_refresh_token, 
     verify_password, get_password_hash, check_permission, audit_log,
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 @router.post("/token", response_model=Token, summary="Get access token")
 @audit_log("login", "authentication")
 async def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
@@ -53,10 +55,14 @@ async def login_for_access_token(
             detail="Inactive user"
         )
     
+    # Capture client metadata
+    ip_address = request.client.host if request.client else "Unknown"
+    user_agent = request.headers.get("user-agent", "Unknown")
+
     # Create temporary session for tracking
     session_id = session_manager.create_session(user.username, {
-        "ip_address": "client_ip",
-        "user_agent": "user_agent"
+        "ip_address": ip_address,
+        "user_agent": user_agent
     })
 
     # Check 2FA
@@ -66,10 +72,10 @@ async def login_for_access_token(
             {"session_id": session_id, "2fa_required": True}, 
             True
         )
-        return {
-            "twofa_required": True,
-            "username": user.username
-        }
+        return Token(
+            twofa_required=True,
+            username=user.username
+        )
 
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -93,6 +99,7 @@ async def login_for_access_token(
 
 @router.post("/login/verify-2fa", response_model=Token, summary="Verify 2FA login")
 async def verify_login_2fa(
+    request: Request,
     username: str,
     data: Verify2FA,
     db: Session = Depends(get_db)
@@ -131,10 +138,14 @@ async def verify_login_2fa(
     )
     refresh_token = create_refresh_token(user.username)
     
+    # Capture client metadata
+    ip_address = request.client.host if request.client else "Unknown"
+    user_agent = request.headers.get("user-agent", "Unknown")
+
     # Create logic session
     session_id = session_manager.create_session(user.username, {
-        "ip_address": "client_ip",
-        "user_agent": "user_agent"
+        "ip_address": ip_address,
+        "user_agent": user_agent
     })
     
     audit_logger.log_action(
@@ -548,6 +559,47 @@ async def get_user_organization(
         "user_role": current_user.role
     }
 
+@router.put("/organizations", summary="Update organization info")
+async def update_organization(
+    data: OrganizationUpdate,
+    current_user: User = Depends(RoleChecker(["Admin", "Compliance Officer"])),
+    db: Session = Depends(get_db)
+):
+    """
+    Update details for the current user's organization.
+    """
+    if not current_user.org_id:
+        raise HTTPException(
+            status_code=404,
+            detail="User is not associated with any organization"
+        )
+    
+    org = db.query(Organization).filter(Organization.id == current_user.org_id).first()
+    if not org:
+        raise HTTPException(
+            status_code=404,
+            detail="Organization not found"
+        )
+    
+    if data.name is not None:
+        org.name = data.name
+    if data.domain is not None:
+        org.domain = data.domain
+    if data.is_active is not None:
+        org.is_active = data.is_active
+    
+    db.add(org)
+    db.commit()
+    db.refresh(org)
+    
+    audit_logger.log_action(
+        current_user.username, "update_organization", "organization_management", 
+        {"org_id": org.id, "updates": data.dict(exclude_none=True)}, 
+        True
+    )
+    
+    return org
+
 @router.post("/2fa/generate", summary="Generate 2FA Secret")
 async def generate_2fa(
     current_user: User = Depends(get_current_user)
@@ -631,7 +683,7 @@ async def disable_2fa(
     
     return {"message": "2FA has been disabled successfully"}
 
-@router.post("/sessions/active", summary="Get active sessions")
+@router.get("/sessions/active", summary="Get active sessions")
 async def get_active_sessions(
     current_user: User = Depends(get_current_user)
 ):
@@ -648,7 +700,7 @@ async def get_active_sessions(
                 "ip_address": session_data["data"].get("ip_address", "Unknown"),
                 "user_agent": session_data["data"].get("user_agent", "Unknown")
             })
-    
+
     return {"sessions": sessions}
 
 @router.delete("/sessions/{session_id}", summary="Invalidate session")
