@@ -328,3 +328,39 @@
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+.badgeClear {
+  background: var(--success-soft);
+  color: var(--success);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(var(--success-rgb), 0.2);
+}
+
+.badgeReject {
+  background: var(--danger-soft);
+  color: var(--danger);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(var(--danger-rgb), 0.2);
+}
+
+.badgeReview {
+  background: var(--warning-soft);
+  color: var(--warning);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(var(--warning-rgb), 0.2);
+}
