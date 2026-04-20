@@ -194,14 +194,20 @@
   font-size: 0.875rem;
 }
 
-.divider::before, .divider::after {
+.divider::before,
+.divider::after {
   content: "";
   flex: 1;
   border-bottom: 1px solid var(--border);
 }
 
-.divider::before { margin-right: 16px; }
-.divider::after { margin-left: 16px; }
+.divider::before {
+  margin-right: 16px;
+}
+
+.divider::after {
+  margin-left: 16px;
+}
 
 .socialBtn {
   width: 100%;
@@ -271,7 +277,9 @@
 
 /* Spinner */
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .spinner {
