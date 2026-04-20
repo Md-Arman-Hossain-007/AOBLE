@@ -825,7 +825,7 @@ export default function BulkCenterPage() {
                   <div className={styles.jobActions}>
                     {job.status === 'completed' && (
                       <button
-                        className={`${styles.actionBtn} ${styles.actionBtnPrimary}`}
+                        className={`${styles.actionBtn} ${styles.primaryAction}`}
                         onClick={() => handleViewResults(job)}
                       >
                         <Eye size={14} />
