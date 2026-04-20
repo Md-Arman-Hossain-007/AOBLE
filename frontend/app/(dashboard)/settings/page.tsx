@@ -718,19 +718,19 @@ export default function SettingsPage() {
               <form className={styles.formGrid} onSubmit={handleUpdateOrg}>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Organization Name</label>
-                  <input name="org_name" type="text" className={styles.input} defaultValue={organization?.name} />
+                  <input name="org_name" type="text" className={styles.input} defaultValue={organization?.name || ""} key={organization?.id || 'org_name'} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Domain</label>
-                  <input name="org_domain" type="text" className={styles.input} defaultValue={organization?.domain} />
+                  <input name="org_domain" type="text" className={styles.input} defaultValue={organization?.domain || ""} key={organization?.id || 'org_domain'} />
                 </div>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Access Level</label>
-                  <input type="text" className={styles.input} value={currentUser?.role} readOnly disabled />
+                  <input type="text" className={styles.input} value={currentUser?.role || ""} readOnly disabled />
                 </div>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Admin Identity</label>
-                  <input type="text" className={styles.input} value={currentUser?.full_name} readOnly disabled />
+                  <input type="text" className={styles.input} value={currentUser?.full_name || ""} readOnly disabled />
                 </div>
                 <button className={styles.saveBtn} type="submit" disabled={saving}>
                   {saving ? <RefreshCw size={18} className={styles.spinning} /> : <Save size={18} />}
@@ -742,7 +742,7 @@ export default function SettingsPage() {
             <div className={styles.settingsCard}>
               <h3 className={styles.cardTitle}>Production Secrets</h3>
               <div className={styles.apiKeyWrapper}>
-                <input type={showApiKey ? "text" : "password"} className={styles.apiInput} value={currentUser?.api_key} readOnly />
+                <input type={showApiKey ? "text" : "password"} className={styles.apiInput} value={currentUser?.api_key || ""} readOnly />
                 <button className={styles.eyeBtn} onClick={() => setShowApiKey(!showApiKey)}>
                   {showApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -767,8 +767,8 @@ export default function SettingsPage() {
                   <label className={styles.label}>Fuzzy Match Threshold (%)</label>
                   <input 
                     type="number" className={styles.input} 
-                    value={compliance.fuzzy_threshold} 
-                    onChange={e => setCompliance({...compliance, fuzzy_threshold: parseInt(e.target.value)})}
+                    value={compliance.fuzzy_threshold ?? 80} 
+                    onChange={e => setCompliance({...compliance, fuzzy_threshold: parseInt(e.target.value) || 0})}
                   />
                   <p className={styles.cardDesc}>Recommended: 80%. Lower values increase matches (more False Positives).</p>
                 </div>
@@ -776,8 +776,8 @@ export default function SettingsPage() {
                   <label className={styles.label}>Auto-Clear Threshold (%)</label>
                   <input 
                     type="number" className={styles.input} 
-                    value={compliance.auto_clear_threshold} 
-                    onChange={e => setCompliance({...compliance, auto_clear_threshold: parseInt(e.target.value)})}
+                    value={compliance.auto_clear_threshold ?? 50} 
+                    onChange={e => setCompliance({...compliance, auto_clear_threshold: parseInt(e.target.value) || 0})}
                   />
                   <p className={styles.cardDesc}>Scores below this are marked Clear automatically.</p>
                 </div>
@@ -935,7 +935,11 @@ export default function SettingsPage() {
                   </tbody>
                </table>
             </div>
-            <button className={styles.saveBtn} onClick={() => setShowInviteModal(true)}><UserPlus size={18} /> Invite Investigator</button>
+            <div style={{ marginTop: '24px' }}>
+              <button className={styles.saveBtn} onClick={() => setShowInviteModal(true)}>
+                <UserPlus size={18} /> Invite Investigator
+              </button>
+            </div>
           </>
         );
 
@@ -1080,7 +1084,7 @@ export default function SettingsPage() {
                   <ul className={styles.planFeatures}>
                     {p.features.map(f => (
                       <li key={f} className={styles.featureItem}>
-                        <Check size={16} className={styles.featureIcon} /> {f}
+                        <Check size={16} className={styles.featureIcon} strokeWidth={3} /> {f}
                       </li>
                     ))}
                     {p.disabled.map(f => (
@@ -1244,7 +1248,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   className={styles.input} 
-                  value={twoFASecret}
+                  value={twoFASecret || ""}
                   readOnly
                   style={{ fontFamily: 'monospace', fontSize: '1.1rem', textAlign: 'center' }}
                 />
@@ -1255,7 +1259,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   className={styles.input} 
-                  value={twoFACode}
+                  value={twoFACode || ""}
                   onChange={(e) => setTwoFACode(e.target.value)}
                   placeholder="Enter 6-digit code from your app"
                   maxLength={6}
@@ -1290,7 +1294,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   className={styles.input} 
-                  value={disable2FACode}
+                  value={disable2FACode || ""}
                   onChange={(e) => setDisable2FACode(e.target.value.replace(/\D/g, '').substring(0, 6))}
                   placeholder="Enter 6-digit code to confirm"
                   maxLength={6}
