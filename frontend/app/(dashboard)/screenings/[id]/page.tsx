@@ -662,7 +662,7 @@ export default function ScreeningDetailPage() {
                   <div key={hi} className={styles.timelineItem}>
                     <div className={styles.timelineDot}></div>
                     <div className={styles.timelineContent}>
-                      <span className={styles.timelineAction}>{h.action.replace('_', ' ')}</span>
+                      <span className={styles.timelineAction}>{h.action.replace(/_/g, ' ')}</span>
                       <span className={styles.timelineMeta}>by {h.user_id} • {new Date(h.timestamp).toLocaleString()}</span>
                     </div>
                   </div>
