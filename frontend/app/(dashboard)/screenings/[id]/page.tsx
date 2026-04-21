@@ -543,7 +543,7 @@ export default function ScreeningDetailPage() {
             <button 
               className={styles.iconBtn} 
               onClick={handleDownloadSummaryReport}
-              style={{ background: 'var(--primary)', color: 'white', border: '1px solid var(--primary)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+              style={{ background: 'var(--primary)', color: 'white' }}
             >
                <FileText size={16} /> Summary Report 
             </button>
@@ -551,7 +551,7 @@ export default function ScreeningDetailPage() {
             <button 
               className={styles.iconBtn} 
               onClick={handleDownloadReport}
-              style={{ background: '#10b981', color: 'white', border: '1px solid #10b981', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)' }}
+              style={{ background: '#10b981', color: 'white' }}
             >
               <Download size={16} /> Clearance Report
             </button>
@@ -560,7 +560,7 @@ export default function ScreeningDetailPage() {
           <button 
             className={`${styles.iconBtn} ${data.monitoring_enabled ? styles.monitoringActiveBtn : styles.primaryIconBtn}`}
             onClick={handleToggleMonitoring}
-            style={data.monitoring_enabled ? { background: '#10b981', color: 'white', borderColor: '#10b981' } : {}}
+            style={data.monitoring_enabled ? { background: '#10b981', color: 'white' } : {}}
             disabled={togglingMonitoring}
           >
             {togglingMonitoring ? (
@@ -587,11 +587,11 @@ export default function ScreeningDetailPage() {
         </div>
         <div className={styles.summaryItem}>
           <span className={styles.summaryLabel}>Risk Rating</span>
-          <div className={styles.riskRatingValue}>
-            <span className={data.risk_level === 'HIGH' ? styles.badgeReject : data.risk_level === 'MEDIUM' ? styles.badgeReview : styles.badgeClear} style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+          <div className={styles.summaryValue}>
+            <span className={data.risk_level === 'HIGH' ? styles.badgeReject : data.risk_level === 'MEDIUM' ? styles.badgeReview : styles.badgeClear} style={{ fontSize: '0.65rem', padding: '4px 10px' }}>
               {data.risk_level}
             </span>
-            <span className={styles.summaryValue}>{Math.round(data.summary?.max_score || 0)}%</span>
+            <span>{Math.round(data.summary?.max_score || 0)}%</span>
           </div>
         </div>
         <div className={styles.summaryItem}>
@@ -600,16 +600,16 @@ export default function ScreeningDetailPage() {
         </div>
         <div className={styles.summaryItem}>
           <span className={styles.summaryLabel}>Screening ID</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className={styles.summaryValue} style={{ fontSize: '0.7rem', fontFamily: 'monospace', opacity: 0.8 }}>
+          <div className={styles.summaryValue}>
+            <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', opacity: 0.8 }}>
               {data.screening_id}
             </span>
             <button 
               onClick={() => copyToClipboard(data.screening_id)} 
-              style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${copiedId === data.screening_id ? '#10b981' : 'var(--border)'}`, borderRadius: '4px', cursor: 'pointer', color: copiedId === data.screening_id ? '#10b981' : 'var(--secondary)', padding: '4px', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}
+              style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${copiedId === data.screening_id ? '#10b981' : 'var(--border)'}`, borderRadius: '6px', cursor: 'pointer', color: copiedId === data.screening_id ? '#10b981' : 'var(--secondary)', padding: '6px', display: 'flex', alignItems: 'center', transition: 'all 0.2s' }}
               title="Copy to Clipboard"
             >
-              {copiedId === data.screening_id ? <Check size={12} /> : <Copy size={12} />}
+              {copiedId === data.screening_id ? <Check size={14} /> : <Copy size={14} />}
             </button>
           </div>
         </div>
