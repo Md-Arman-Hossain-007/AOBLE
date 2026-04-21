@@ -213,18 +213,23 @@ export default function HistoryAuditPage() {
     const s = status?.toLowerCase();
     switch(s) {
       case 'clear':
+      case 'cleared':
       case 'resolved':
       case 'completed':
+      case 'success':
         return styles.statusSuccess;
       case 'match':
+      case 'rejected':
       case 'escalated':
       case 'failed':
       case 'breached':
+      case 'rejected_match':
         return styles.statusDanger;
       case 'review':
       case 'pending':
       case 'under_review':
       case 'processing':
+      case 'in_review':
         return styles.statusWarning;
       default:
         return styles.statusInfo;
