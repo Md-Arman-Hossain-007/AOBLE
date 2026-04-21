@@ -22,7 +22,8 @@ import {
   BookOpen,
   Building2,
   User,
-  Globe
+  Globe,
+  ExternalLink
 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -105,7 +106,7 @@ export default function DashboardLayout({
     { href: "/monitoring", label: "Monitoring", icon: Bell },
     { href: "/activity", label: "Activity Center", icon: Activity },
     { href: "/history/all", label: "History & Audit", icon: History },
-    { href: "/api-docs", label: "API Documentation", icon: BookOpen },
+    { href: "/api-docs", label: "API Documentation", icon: BookOpen, external: true },
     { href: "/settings", label: "Settings", icon: Settings },
   ];
 
@@ -216,11 +217,14 @@ export default function DashboardLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                target={item.external ? "_blank" : undefined}
+                rel={item.external ? "noopener noreferrer" : undefined}
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
                 onClick={() => setSidebarOpen(false)}
               >
                 <Icon size={20} />
                 {item.label}
+                {item.external && <ExternalLink size={14} style={{ marginLeft: 'auto', opacity: 0.5 }} />}
               </Link>
             );
           })}
