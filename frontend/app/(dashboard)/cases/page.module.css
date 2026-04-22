@@ -394,6 +394,13 @@
   box-shadow: var(--shadow-sm);
 }
 
+.kanbanContainer {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
 .loadingContainer,
 .emptyState {
   display: flex;
@@ -783,4 +790,226 @@
     flex-direction: column;
     gap: 12px;
   }
+}
+
+/* Kanban Board Styles */
+.kanbanBoard {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  padding: 8px 16px 32px 8px;
+  min-height: 750px;
+  align-items: flex-start;
+}
+
+.kanbanColumn {
+  flex: 0 0 340px;
+  min-width: 340px;
+  background-color: rgba(var(--surface-rgb), 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 280px);
+  transition: all 0.3s ease;
+}
+
+.columnHighlight {
+  background-color: rgba(var(--primary-rgb), 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
+}
+
+.columnHeader {
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background-color: rgba(var(--surface-rgb), 0.3);
+  border-radius: 18px 18px 0 0;
+}
+
+.columnTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  color: var(--foreground);
+  font-size: 0.95rem;
+}
+
+.columnCount {
+  font-size: 0.75rem;
+  background-color: var(--surface-hover);
+  color: var(--secondary);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.columnAction {
+  background: transparent;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.columnAction:hover {
+  background-color: var(--surface-hover);
+  color: var(--foreground);
+}
+
+.columnBody {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.columnBody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.columnBody::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 10px;
+}
+
+.kanbanCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.kanbanCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--foreground);
+  text-decoration: none;
+  line-height: 1.5;
+  display: block;
+  margin: 4px 0;
+}
+
+.cardTitle:hover {
+  color: var(--primary);
+}
+
+.cardMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.cardType {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: var(--surface-hover);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.cardRef {
+  font-size: 0.75rem;
+  color: var(--secondary);
+  opacity: 0.7;
+}
+
+.cardFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  gap: 12px;
+}
+
+.cardAssignee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+}
+
+.cardAssigneeName {
+  font-size: 0.8125rem;
+  color: var(--secondary);
+  font-weight: 500;
+}
+
+.cardDate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--secondary);
+  white-space: nowrap;
+}
+
+.kanbanEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--secondary);
+  font-size: 0.875rem;
+  font-style: italic;
+  opacity: 0.5;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
 }

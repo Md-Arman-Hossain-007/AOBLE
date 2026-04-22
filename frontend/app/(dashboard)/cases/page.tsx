@@ -38,6 +38,7 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { Modal } from "../../components/Modal";
 import modalStyles from "../../components/Modal.module.css";
 import { Tooltip } from "../../components/Tooltip";
+import { KanbanBoard } from "./KanbanBoard";
 
 interface Case {
   id: string;
@@ -450,6 +451,45 @@ export default function CaseInboxPage() {
     }
   };
 
+  const handleStatusChange = async (caseId: string, newStatus: string) => {
+    const token = getToken();
+    if (!token) return;
+
+    const caseItem = cases.find(c => c.id === caseId);
+    if (!caseItem || caseItem.status === newStatus) return;
+
+    // Optimistic update
+    const previousCases = [...cases];
+    setCases(cases.map(c => c.id === caseId ? { ...c, status: newStatus } : c));
+
+    try {
+      const res = await fetch(`${API_BASE}/compliance/cases/${caseId}/status`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update status");
+      }
+      
+      // Refresh stats
+      const statsRes = await fetch(`${API_BASE}/compliance/cases/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (statsRes.ok) {
+        setStats(await statsRes.json());
+      }
+    } catch (err) {
+      console.error("Failed to update status:", err);
+      // Rollback
+      setCases(previousCases);
+    }
+  };
+
   const handleExport = () => {
     // Convert cases to CSV
     const headers = ["ID", "Title", "Status", "Priority", "Type", "Assigned To", "Created", "SLA Status"];
@@ -498,8 +538,8 @@ export default function CaseInboxPage() {
             </button>
             <button 
               className={`${styles.viewBtn} ${viewMode === 'kanban' ? styles.viewBtnActive : ''}`}
-              onClick={() => alert('Kanban view coming soon!')}
-              title="Kanban View (Coming Soon)"
+              onClick={() => setViewMode('kanban')}
+              title="Kanban View"
             >
               <LayoutGrid size={18} />
             </button>
@@ -687,8 +727,8 @@ export default function CaseInboxPage() {
         </section>
       )}
 
-      {/* Cases Table */}
-      <section className={styles.tableContainer}>
+      {/* Cases Table / Kanban */}
+      <section className={`${styles.tableContainer} ${viewMode === 'kanban' ? styles.kanbanContainer : ''}`}>
         {loading ? (
           <div className={styles.loadingContainer}>
             <LoadingSpinner />
@@ -710,6 +750,8 @@ export default function CaseInboxPage() {
               </button>
             )}
           </div>
+        ) : viewMode === 'kanban' ? (
+          <KanbanBoard cases={cases} onStatusChange={handleStatusChange} />
         ) : (
           <>
             <table className={styles.table}>
