@@ -48,7 +48,8 @@ async def screen_entity(
         entity_type=request.screening_type,
         country=request.country,
         birth_date=request.date_of_birth,
-        threshold=request.threshold
+        threshold=request.threshold,
+        registration_number=request.registration_number
     )
     
     # Convert to expected frontend format

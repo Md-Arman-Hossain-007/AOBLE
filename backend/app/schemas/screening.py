@@ -52,6 +52,7 @@ class ScreenRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     company_name: Optional[str] = None
+    registration_number: Optional[str] = None
     country: Optional[str] = None
     date_of_birth: Optional[str] = None
     threshold: float = 0.65

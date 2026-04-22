@@ -39,6 +39,7 @@ export default function ScreenPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [country, setCountry] = useState("");
   const [threshold, setThreshold] = useState(80);
@@ -100,6 +101,7 @@ export default function ScreenPage() {
         first_name: screeningType === "individual" ? firstName : undefined,
         last_name: screeningType === "individual" ? lastName : undefined,
         company_name: screeningType === "entity" ? companyName : undefined,
+        registration_number: screeningType === "entity" ? registrationNumber : undefined,
         date_of_birth: dateOfBirth || undefined,
         country: country || undefined,
         threshold: threshold / 100,
@@ -141,6 +143,7 @@ export default function ScreenPage() {
     setFirstName("");
     setLastName("");
     setCompanyName("");
+    setRegistrationNumber("");
     setDateOfBirth("");
     setCountry("");
     setThreshold(80);
@@ -232,56 +235,82 @@ export default function ScreenPage() {
                 <h3 className={styles.sectionTitle}>Primary Information</h3>
                 
                 <div className={styles.formGrid}>
-                  <div className={styles.formGroup}>
-                    <label>First Name {screeningType === "entity" && "(Optional)"}</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. John" 
-                      className={styles.input}
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      disabled={screeningType !== "individual"}
-                    />
-                  </div>
-                  
-                  <div className={styles.formGroup}>
-                    <label>{screeningType === "entity" ? "Entity / Company Name" : "Last Name"}</label>
-                    <input 
-                      type="text" 
-                      placeholder={screeningType === "entity" ? "e.g. Acme Corp" : "e.g. Doe"} 
-                      className={styles.input}
-                      value={screeningType === "entity" ? companyName : lastName}
-                      onChange={(e) => {
-                        if (screeningType === "entity") {
-                          setCompanyName(e.target.value);
-                        } else {
-                          setLastName(e.target.value);
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-                
-                <div className={styles.formGrid}>
-                  <div className={styles.formGroup}>
-                    <label>Country / Nationality</label>
-                    <CountrySelect 
-                      value={country}
-                      onChange={(val) => setCountry(val)}
-                      placeholder="Select origin country"
-                    />
-                  </div>
-                  
-                  {screeningType === "individual" && (
-                    <div className={styles.formGroup}>
-                      <label>Date of Birth</label>
-                      <input 
-                        type="date" 
-                        className={styles.input}
-                        value={dateOfBirth}
-                        onChange={(e) => setDateOfBirth(e.target.value)}
-                      />
-                    </div>
+                  {screeningType === "individual" ? (
+                    <>
+                      <div className={styles.formGroup}>
+                        <label>First Name</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. John" 
+                          className={styles.input}
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className={styles.formGroup}>
+                        <label>Last Name</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Doe" 
+                          className={styles.input}
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>Country / Nationality</label>
+                        <CountrySelect 
+                          value={country}
+                          onChange={(val) => setCountry(val)}
+                          placeholder="Select origin country"
+                        />
+                      </div>
+                      
+                      <div className={styles.formGroup}>
+                        <label>Date of Birth</label>
+                        <input 
+                          type="date" 
+                          className={styles.input}
+                          value={dateOfBirth}
+                          onChange={(e) => setDateOfBirth(e.target.value)}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+                        <label>Entity / Company Name</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Acme Corp" 
+                          className={styles.input}
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className={styles.formGroup}>
+                        <label>Registration Number</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. 12345678" 
+                          className={styles.input}
+                          value={registrationNumber}
+                          onChange={(e) => setRegistrationNumber(e.target.value)}
+                        />
+                      </div>
+
+                      <div className={styles.formGroup}>
+                        <label>Country / Nationality</label>
+                        <CountrySelect 
+                          value={country}
+                          onChange={(val) => setCountry(val)}
+                          placeholder="Select origin country"
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

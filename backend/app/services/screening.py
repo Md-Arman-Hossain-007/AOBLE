@@ -491,7 +491,7 @@ async def perform_screening(
     )
 
 class ScreeningService:
-    async def screen(self, db, user_id, name, entity_type, country=None, birth_date=None, threshold=0.65):
+    async def screen(self, db, user_id, name, entity_type, country=None, birth_date=None, threshold=0.65, registration_number=None):
         from ..schemas.screening import ScreeningRequest, IndividualScreenRequest, EntityScreenRequest, Algorithm
         
         if entity_type == "individual":
@@ -503,7 +503,7 @@ class ScreeningService:
             )
         else:
             req = ScreeningRequest(
-                entity=EntityScreenRequest(name=name, country=country),
+                entity=EntityScreenRequest(name=name, country=country, registration_number=registration_number),
                 customer_ref=str(uuid.uuid4()),
                 threshold=threshold,
                 algorithm=Algorithm.logic_v2
