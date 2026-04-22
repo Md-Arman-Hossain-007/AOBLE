@@ -99,6 +99,18 @@ def get_all_history(
         v2_screenings = v2_query.order_by(ScreeningResult.screened_at.desc()).all()
         for s in v2_screenings:
             normalized_status = s.status.lower() if s.status else "unknown"
+            
+            # Map matches to minimal data
+            minimal_matches = []
+            if s.all_matches:
+                for m in s.all_matches:
+                    minimal_matches.append({
+                        "id": m.get("entity_id") or m.get("match_id"),
+                        "name": m.get("caption") or m.get("name") or "Unknown",
+                        "score": m.get("score") or (m.get("match_score", 0) / 100),
+                        "status": m.get("status", "potential")
+                    })
+
             history_items.append({
                 "id": str(s.id),
                 "type": "screening",
@@ -111,7 +123,8 @@ def get_all_history(
                 "details": {
                     "match_count": s.match_count,
                     "risk_level": s.risk_level,
-                    "top_score": s.top_score
+                    "top_score": s.top_score,
+                    "matches": minimal_matches
                 }
             })
     
@@ -170,6 +183,33 @@ def get_all_history(
         for b in bulk_jobs:
             # Normalize status to lowercase
             normalized_status = b.status.lower() if b.status else "unknown"
+            
+            # Fetch individual screenings for this bulk job
+            bulk_screenings = db.query(ScreeningResult).filter(
+                ScreeningResult.batch_id == str(b.id)
+            ).all()
+            
+            nested_screenings = []
+            for bs in bulk_screenings:
+                # Map matches for each screening in the batch
+                minimal_bs_matches = []
+                if bs.all_matches:
+                    for m in bs.all_matches:
+                        minimal_bs_matches.append({
+                            "id": m.get("entity_id") or m.get("match_id"),
+                            "name": m.get("caption") or m.get("name") or "Unknown",
+                            "score": m.get("score") or (m.get("match_score", 0) / 100),
+                            "status": m.get("status", "potential")
+                        })
+                
+                nested_screenings.append({
+                    "id": str(bs.id),
+                    "subject": bs.customer_name,
+                    "status": bs.status.lower(),
+                    "match_count": bs.match_count,
+                    "matches": minimal_bs_matches
+                })
+
             history_items.append({
                 "id": b.id,
                 "type": "bulk",
@@ -182,7 +222,8 @@ def get_all_history(
                 "details": {
                     "total_rows": b.total_rows,
                     "processed_rows": b.processed_rows,
-                    "results_summary": b.results_summary
+                    "results_summary": b.results_summary,
+                    "nested_screenings": nested_screenings
                 }
             })
     

@@ -33,7 +33,28 @@ interface HistoryItem {
   user_id: string;
   timestamp: string;
   status: string;
-  details?: any;
+  details?: {
+    match_count?: number;
+    matches?: Array<{
+      id: string;
+      name: string;
+      score: number;
+      status: string;
+    }>;
+    nested_screenings?: Array<{
+      id: string;
+      subject: string;
+      status: string;
+      match_count: number;
+      matches: Array<{
+        id: string;
+        name: string;
+        score: number;
+        status: string;
+      }>;
+    }>;
+    [key: string]: any;
+  };
 }
 
 interface HistoryStats {
@@ -69,6 +90,30 @@ export default function HistoryAuditPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [pageSize, setPageSize] = useState(20);
+  
+  // Row Expansion
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedNestedRows, setExpandedNestedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (id: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedRows(newExpanded);
+  };
+
+  const toggleNestedRow = (id: string) => {
+    const newExpanded = new Set(expandedNestedRows);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedNestedRows(newExpanded);
+  };
 
   const getToken = () => localStorage.getItem("amltab_token");
 
@@ -458,61 +503,179 @@ export default function HistoryAuditPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className={styles.tr}>
-                    <td className={styles.td}>
-                      <div className={styles.typeCell}>
-                        <span className={styles.typeIcon}>
-                          {getTypeIcon(item.type)}
-                        </span>
-                        <span className={styles.typeLabel}>
-                          {item.type === 'individual' ? 'Individual' : 
-                           item.type === 'entity' ? 'Entity' :
-                           item.type === 'case' ? 'Case' :
-                           item.type === 'bulk' ? 'Bulk' : 'Screening'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className={styles.td}>
-                      <span className={styles.subject}>{item.subject}</span>
-                    </td>
-                    <td className={styles.td}>
-                      <span className={styles.action}>{item.action}</span>
-                    </td>
-                    <td className={styles.td}>
-                      <span className={`${styles.statusBadge} ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className={styles.td}>
-                      <div className={styles.userCell}>
-                        <div className={styles.userAvatar}>
-                          {item.user_id?.slice(0, 2).toUpperCase() || 'U'}
+                 {items.map((item) => (
+                   <React.Fragment key={item.id}>
+                    <tr 
+                      className={`${styles.tr} ${expandedRows.has(item.id) ? styles.rowExpanded : ''}`}
+                      onClick={() => toggleRow(item.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td className={styles.td}>
+                        <div className={styles.typeCell}>
+                          <ChevronDown 
+                            size={14} 
+                            className={`${styles.expandIcon} ${expandedRows.has(item.id) ? styles.expanded : ''}`} 
+                            style={{ opacity: (item.type === 'bulk' || (item.details?.match_count || 0) > 0) ? 1 : 0 }}
+                          />
+                          <span className={styles.typeIcon}>
+                            {getTypeIcon(item.type)}
+                          </span>
+                          <span className={styles.typeLabel}>
+                            {item.type === 'individual' ? 'Individual' : 
+                             item.type === 'entity' ? 'Entity' :
+                             item.type === 'case' ? 'Case' :
+                             item.type === 'bulk' ? 'Bulk' : 'Screening'}
+                          </span>
                         </div>
-                        <span>{item.user_id || 'System'}</span>
-                      </div>
-                    </td>
-                    <td className={styles.td}>
-                      <div className={styles.timestampCell}>
-                        <Clock size={14} />
-                        {formatDate(item.timestamp)}
-                      </div>
-                    </td>
-                    <td className={styles.td}>
-                      <Link 
-                        href={
-                          item.type === 'case' ? `/cases/${item.id}` :
-                          item.type === 'bulk' ? `/bulk` :
-                          `/screenings/${item.id}`
-                        } 
-                        className={styles.actionLink}
-                        title="View details"
-                      >
-                        <Eye size={16} />
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className={styles.td}>
+                        <span className={styles.subject}>{item.subject}</span>
+                      </td>
+                      <td className={styles.td}>
+                        <span className={styles.action}>{item.action}</span>
+                      </td>
+                      <td className={styles.td}>
+                        <span className={`${styles.statusBadge} ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className={styles.td}>
+                        <div className={styles.userCell}>
+                          <div className={styles.userAvatar}>
+                            {item.user_id?.slice(0, 2).toUpperCase() || 'U'}
+                          </div>
+                          <span>{item.user_id || 'System'}</span>
+                        </div>
+                      </td>
+                      <td className={styles.td}>
+                        <div className={styles.timestampCell}>
+                          <Clock size={14} />
+                          {formatDate(item.timestamp)}
+                        </div>
+                      </td>
+                      <td className={styles.td}>
+                        <Link 
+                          href={
+                            item.type === 'case' ? `/cases/${item.id}` :
+                            item.type === 'bulk' ? `/bulk` :
+                            `/screenings/${item.id}`
+                          } 
+                          className={styles.actionLink}
+                          title="View details"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Eye size={16} />
+                        </Link>
+                      </td>
+                    </tr>
+
+                    {/* Sub-row for Screening Matches */}
+                    {expandedRows.has(item.id) && item.type !== 'bulk' && item.details?.matches && item.details.matches.length > 0 && (
+                      <tr className={styles.subRow}>
+                        <td colSpan={7}>
+                          <div className={styles.subRowContent}>
+                            <h4 className={styles.subTitle}>Matches Found ({item.details.match_count})</h4>
+                            <div className={styles.matchList}>
+                              {item.details.matches.map(match => (
+                                <div key={match.id} className={styles.matchItem}>
+                                  <div className={styles.matchMain}>
+                                    <span className={styles.matchName}>{match.name}</span>
+                                    <span className={styles.matchId}>{match.id}</span>
+                                  </div>
+                                  <div className={styles.matchMeta}>
+                                    <span className={styles.matchScore}>{(match.score * 100).toFixed(1)}% Match</span>
+                                    <span className={`${styles.statusBadge} ${styles.statusInfo}`} style={{ fontSize: '0.6rem', padding: '2px 8px' }}>
+                                      {match.status}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Sub-row for Bulk Screening */}
+                    {expandedRows.has(item.id) && item.type === 'bulk' && item.details?.nested_screenings && (
+                      <tr className={styles.subRow}>
+                        <td colSpan={7}>
+                          <div className={styles.subRowContent}>
+                            <h4 className={styles.subTitle}>Bulk Screening Details ({item.details.nested_screenings.length} records)</h4>
+                            <table className={styles.nestedTable}>
+                              <thead>
+                                <tr>
+                                  <th className={styles.nestedTh} style={{ width: '40px' }}></th>
+                                  <th className={styles.nestedTh}>Subject</th>
+                                  <th className={styles.nestedTh}>Status</th>
+                                  <th className={styles.nestedTh}>Matches</th>
+                                  <th className={styles.nestedTh}>Action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {item.details.nested_screenings.map(ns => (
+                                  <React.Fragment key={ns.id}>
+                                    <tr 
+                                      className={styles.nestedTr} 
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (ns.match_count > 0) toggleNestedRow(ns.id);
+                                      }}
+                                    >
+                                      <td className={styles.nestedTd}>
+                                        {ns.match_count > 0 && (
+                                          <ChevronDown 
+                                            size={12} 
+                                            className={`${styles.expandIcon} ${expandedNestedRows.has(ns.id) ? styles.expanded : ''}`} 
+                                          />
+                                        )}
+                                      </td>
+                                      <td className={styles.nestedTd}><strong>{ns.subject}</strong></td>
+                                      <td className={styles.nestedTd}>
+                                        <span className={`${styles.statusBadge} ${getStatusColor(ns.status)}`} style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+                                          {ns.status}
+                                        </span>
+                                      </td>
+                                      <td className={styles.nestedTd}>
+                                        <span style={{ color: ns.match_count > 0 ? 'var(--primary)' : 'inherit', fontWeight: ns.match_count > 0 ? '700' : 'normal' }}>
+                                          {ns.match_count} matches
+                                        </span>
+                                      </td>
+                                      <td className={styles.nestedTd}>
+                                        <Link href={`/screenings/${ns.id}`} className={styles.actionLink} onClick={(e) => e.stopPropagation()}>
+                                          <Eye size={14} />
+                                        </Link>
+                                      </td>
+                                    </tr>
+                                    {expandedNestedRows.has(ns.id) && ns.matches && (
+                                      <tr className={styles.subSubRow}>
+                                        <td colSpan={5}>
+                                          <div className={styles.matchList} style={{ marginLeft: '40px' }}>
+                                            {ns.matches.map(m => (
+                                              <div key={m.id} className={styles.matchItem} style={{ background: 'var(--background)' }}>
+                                                <div className={styles.matchMain}>
+                                                  <span className={styles.matchName}>{m.name}</span>
+                                                  <span className={styles.matchId} style={{ fontSize: '0.7rem' }}>{m.id}</span>
+                                                </div>
+                                                <div className={styles.matchMeta}>
+                                                  <span className={styles.matchScore}>{(m.score * 100).toFixed(1)}% Match</span>
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </React.Fragment>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                   </React.Fragment>
+                 ))}
               </tbody>
             </table>
 
