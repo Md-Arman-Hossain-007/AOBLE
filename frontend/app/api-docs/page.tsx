@@ -24,7 +24,7 @@ import {
   Layers
 } from "lucide-react";
 import styles from "./page.module.css";
-import { LoadingSpinner } from "../../components/LoadingSpinner";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 
 export default function APIDocsPage() {
   const [loading, setLoading] = useState(true);
