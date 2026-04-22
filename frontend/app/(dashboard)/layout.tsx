@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   LogOut,
+  ChevronDown,
   Layers,
   Inbox,
   ShieldAlert,
@@ -44,6 +45,7 @@ export default function DashboardLayout({
   const [isLoading, setIsLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationModalOpen, setNotificationModalOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     // Get user data from localStorage
@@ -64,6 +66,14 @@ export default function DashboardLayout({
     }
     setIsLoading(false);
   }, [router]);
+
+  // Close profile menu on click outside
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    const handleClick = () => setProfileMenuOpen(false);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [profileMenuOpen]);
 
   // Fetch unread notification count
   useEffect(() => {
@@ -309,12 +319,38 @@ export default function DashboardLayout({
               )}
             </button>
 
-            <div className={styles.profileInfo}>
-              <div className={styles.avatar}>{getInitials()}</div>
-              <div className={styles.profileText}>
-                <span className={styles.profileName}>{user?.full_name || user?.username || 'User'}</span>
-                <span className={styles.profileRole}>{user?.role || 'Compliance Officer'}</span>
+            <div className={styles.profileWrapper}>
+              <div 
+                className={styles.profileInfo} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setProfileMenuOpen(!profileMenuOpen);
+                }}
+              >
+                <div className={styles.avatar}>{getInitials()}</div>
+                <div className={styles.profileText}>
+                  <span className={styles.profileName}>{user?.full_name || user?.username || 'User'}</span>
+                  <span className={styles.profileRole}>{user?.role || 'Compliance Officer'}</span>
+                </div>
+                <ChevronDown size={14} className={`${styles.profileChevron} ${profileMenuOpen ? styles.chevronRotated : ''}`} />
               </div>
+
+              {profileMenuOpen && (
+                <div className={styles.profileDropdown} onClick={(e) => e.stopPropagation()}>
+                  <div className={styles.dropdownHeader}>
+                    <span className={styles.dropdownEmail}>{user?.username || 'user@example.com'}</span>
+                  </div>
+                  <div className={styles.dropdownDivider} />
+                  <Link href="/settings" className={styles.dropdownItem} onClick={() => setProfileMenuOpen(false)}>
+                    <Settings size={16} />
+                    Go to your profile setting
+                  </Link>
+                  <button className={styles.dropdownItem} onClick={handleLogout}>
+                    <LogOut size={16} />
+                    Log out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

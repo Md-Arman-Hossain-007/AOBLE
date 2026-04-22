@@ -443,6 +443,96 @@
   color: var(--secondary);
 }
 
+.profileWrapper {
+  position: relative;
+}
+
+.profileChevron {
+  color: var(--secondary);
+  transition: transform 0.2s ease;
+  margin-left: 4px;
+}
+
+.chevronRotated {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+.profileDropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 220px;
+  background-color: var(--surface);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 1000;
+  animation: dropdownSlide 0.2s ease-out;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownHeader {
+  padding: 8px 12px;
+}
+
+.dropdownEmail {
+  font-size: 0.75rem;
+  color: var(--secondary);
+  word-break: break-all;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background-color: var(--border);
+  margin: 4px 0;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dropdownItem:hover {
+  background-color: var(--surface-hover);
+  color: var(--primary);
+}
+
+.dropdownItem svg {
+  color: var(--secondary);
+  transition: color 0.2s ease;
+}
+
+.dropdownItem:hover svg {
+  color: var(--primary);
+}
+
 .contentWrapper {
   flex: 1;
   overflow-y: auto;
