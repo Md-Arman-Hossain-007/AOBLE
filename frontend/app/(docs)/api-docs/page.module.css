@@ -291,6 +291,46 @@
   margin-left: 8px;
 }
 
+.featureCard {
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.3s ease;
+}
+
+.featureCard:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.featureCard h4 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.featureCard p {
+  font-size: 0.8rem;
+  color: var(--secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-left: 20px;
+  margin-bottom: 32px;
+  color: var(--secondary);
+  font-size: 0.95rem;
+}
+
 /* Code Blocks */
 .codeBlock {
   background: #1e293b;
