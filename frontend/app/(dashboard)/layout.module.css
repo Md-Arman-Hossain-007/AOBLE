@@ -33,6 +33,9 @@
 
 .logoArea {
   height: 72px;
+  min-height: 72px;
+  flex-shrink: 0;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   padding: 0 40px; /* Matched with header padding */
@@ -65,6 +68,7 @@
 .logoText {
   font-size: 1.2rem;
   font-weight: 800;
+  line-height: 1;
   letter-spacing: 0.05em;
   background: linear-gradient(to right, var(--primary), var(--secondary));
   -webkit-background-clip: text;
@@ -191,6 +195,8 @@
 .header {
   height: 72px;
   min-height: 72px;
+  flex-shrink: 0;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
