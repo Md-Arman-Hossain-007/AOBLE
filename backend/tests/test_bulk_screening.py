@@ -14,7 +14,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from app.workers.tasks import process_bulk_screening
-from app.models.models import BulkJob
+from app.models.models import BulkJob, User
 from app.db.session import SessionLocal
 
 
@@ -25,7 +25,21 @@ class TestBulkScreeningStringConcatenation:
         """Set up test fixtures."""
         self.db = SessionLocal()
         self.job_id = "test-job-123"
-        self.user_id = "test_user"
+        self.user_id = "test_user_for_bulk"
+        
+        # Create test user to satisfy foreign key constraint
+        user = self.db.query(User).filter(User.username == self.user_id).first()
+        if not user:
+            test_user = User(
+                username=self.user_id,
+                email="test_bulk@example.com",
+                full_name="Test Bulk User",
+                api_key="fake_api_key_for_bulk_test",
+                password_hash="fake_password",
+                is_active=True
+            )
+            self.db.add(test_user)
+            self.db.commit()
         
     def teardown_method(self):
         """Clean up after tests."""
@@ -33,7 +47,12 @@ class TestBulkScreeningStringConcatenation:
         job = self.db.query(BulkJob).filter(BulkJob.id == self.job_id).first()
         if job:
             self.db.delete(job)
-            self.db.commit()
+            
+        user = self.db.query(User).filter(User.username == self.user_id).first()
+        if user:
+            self.db.delete(user)
+            
+        self.db.commit()
         self.db.close()
 
     def test_string_concatenation_with_integers(self):
@@ -140,9 +159,8 @@ class TestBulkScreeningStringConcatenation:
                 
         finally:
             # Cleanup
-            os.unlink(test_csv.name)
             if os.path.exists(test_csv.name):
-                os.remove(test_csv.name)
+                os.unlink(test_csv.name)
 
     def test_customer_ref_generation(self):
         """Test that customer_ref is generated correctly as a string."""
