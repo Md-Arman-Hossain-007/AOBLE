@@ -27,7 +27,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { NotificationModal } from "../components/NotificationModal";
 import { useRouter } from "next/navigation";
@@ -40,6 +40,7 @@ export default function DashboardLayout({
 }>) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<{ username?: string; full_name?: string; role?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -98,6 +99,21 @@ export default function DashboardLayout({
     // Refresh every 30 seconds
     const interval = setInterval(fetchUnreadCount, 30000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleLogout = () => {
@@ -264,12 +280,18 @@ export default function DashboardLayout({
               <div className={styles.searchBar}>
                 <Search className={styles.searchIcon} size={18} />
                 <input 
+                  ref={searchInputRef}
                   type="text" 
-                  placeholder="Search and press Enter..." 
+                  placeholder="Search entities, screenings, cases..." 
                   className={styles.searchInput}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                {!searchQuery && (
+                  <div className={styles.searchShortcut}>
+                    <span>⌘</span><span>K</span>
+                  </div>
+                )}
               </div>
               
               {/* Search Results Dropdown */}
