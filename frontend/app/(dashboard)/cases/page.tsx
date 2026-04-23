@@ -991,20 +991,29 @@ export default function CaseInboxPage() {
                 <CheckSquare size={16} />
                 Selected Cases
               </div>
-              <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {Array.from(selectedCases).slice(0, 5).map(id => {
+              <div style={{ maxHeight: '240px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {Array.from(selectedCases).map(id => {
                   const caseItem = cases.find(c => c.id === id);
                   return caseItem ? (
-                    <div key={id} style={{ fontSize: '0.8125rem', color: 'var(--secondary)', padding: '4px 8px', backgroundColor: 'var(--surface-hover)', borderRadius: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div key={id} style={{ 
+                      flexShrink: 0, 
+                      fontSize: '0.85rem', 
+                      color: 'var(--foreground)', 
+                      padding: '10px 14px', 
+                      backgroundColor: 'var(--primary-soft)', 
+                      border: '1px solid var(--border)',
+                      borderLeft: '4px solid var(--primary)',
+                      borderRadius: '8px', 
+                      whiteSpace: 'nowrap', 
+                      overflow: 'hidden', 
+                      textOverflow: 'ellipsis',
+                      fontWeight: 500,
+                      boxShadow: 'var(--shadow-sm)'
+                    }}>
                       {caseItem.title}
                     </div>
                   ) : null;
                 })}
-                {selectedCases.size > 5 && (
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--secondary)', padding: '4px 8px', backgroundColor: 'var(--surface-hover)', borderRadius: 6 }}>
-                    +{selectedCases.size - 5} more...
-                  </div>
-                )}
               </div>
             </div>
 
