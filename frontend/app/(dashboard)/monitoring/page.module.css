@@ -388,15 +388,30 @@
   gap: 6px;
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.statusActive {
   color: #22c55e;
+}
+
+.statusInactive {
+  color: var(--secondary);
 }
 
 .statusDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+.statusDotActive {
   background: #22c55e;
   box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.statusDotInactive {
+  background: var(--secondary);
+  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
 }
 
 /* Actions */
@@ -631,4 +646,120 @@
   .table {
     min-width: 800px;
   }
+}
+
+/* Delete Modal Styles */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.modalHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 24px 16px;
+  text-align: center;
+}
+
+.modalIconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 50%;
+  color: #ef4444;
+}
+
+.modalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.modalBody {
+  padding: 0 24px 24px;
+  text-align: center;
+  color: var(--secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.modalBody strong {
+  color: var(--foreground);
+}
+
+.modalFooter {
+  display: flex;
+  gap: 12px;
+  padding: 20px 24px;
+  background: var(--surface-hover);
+  border-top: 1px solid var(--border);
+}
+
+.modalCancelBtn {
+  flex: 1;
+  padding: 10px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modalCancelBtn:hover {
+  background: var(--surface);
+  border-color: var(--secondary);
+}
+
+.modalDeleteBtn {
+  flex: 1;
+  padding: 10px 16px;
+  background: #ef4444;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modalDeleteBtn:hover {
+  background: #dc2626;
 }

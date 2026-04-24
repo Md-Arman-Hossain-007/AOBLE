@@ -42,6 +42,8 @@ export default function MonitoringPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "high" | "medium" | "low" | "pending">("all");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [entityToDelete, setEntityToDelete] = useState<MonitoredEntity | null>(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,8 +77,14 @@ export default function MonitoringPage() {
     setIsRefreshing(false);
   };
 
-  const handleRemove = async (id: string) => {
-    if (!confirm("Are you sure you want to stop monitoring this entity?")) return;
+  const confirmRemove = (entity: MonitoredEntity) => {
+    setEntityToDelete(entity);
+    setDeleteModalOpen(true);
+  };
+
+  const handleRemove = async () => {
+    if (!entityToDelete) return;
+    const id = entityToDelete.id;
 
     const token = localStorage.getItem("amltab_token");
     try {
@@ -89,6 +97,9 @@ export default function MonitoringPage() {
       }
     } catch (err) {
       console.error("Delete failed:", err);
+    } finally {
+      setDeleteModalOpen(false);
+      setEntityToDelete(null);
     }
   };
 
@@ -414,8 +425,8 @@ export default function MonitoringPage() {
                     </div>
                   </td>
                   <td className={styles.td}>
-                    <span className={styles.statusBadge}>
-                      <span className={styles.statusDot}></span>
+                    <span className={`${styles.statusBadge} ${entity.status === "active" ? styles.statusActive : styles.statusInactive}`}>
+                      <span className={`${styles.statusDot} ${entity.status === "active" ? styles.statusDotActive : styles.statusDotInactive}`}></span>
                       {entity.status === "active" ? "Active" : "Inactive"}
                     </span>
                   </td>
@@ -430,7 +441,7 @@ export default function MonitoringPage() {
                       </Link>
                       <button
                         className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
-                        onClick={() => handleRemove(entity.id)}
+                        onClick={() => confirmRemove(entity)}
                         title="Stop Monitoring"
                       >
                         <Trash2 size={14} />
@@ -526,6 +537,40 @@ export default function MonitoringPage() {
           </div>
         )}
       </section>
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && entityToDelete && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalIconWrapper}>
+                <AlertTriangle size={24} className={styles.modalIcon} />
+              </div>
+              <h2 className={styles.modalTitle}>Stop Monitoring</h2>
+            </div>
+            <div className={styles.modalBody}>
+              <p>
+                Are you sure you want to stop monitoring <strong>{entityToDelete.query_name}</strong>? 
+                This action cannot be undone and you will no longer receive compliance alerts for this entity.
+              </p>
+            </div>
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.modalCancelBtn} 
+                onClick={() => setDeleteModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.modalDeleteBtn} 
+                onClick={handleRemove}
+              >
+                Stop Monitoring
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
