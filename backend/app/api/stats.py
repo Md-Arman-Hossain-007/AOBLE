@@ -21,20 +21,20 @@ def get_period_date_range(period: str) -> tuple:
         start = now - timedelta(hours=24)
         return start, now
     elif period == "7d":
-        start = now - timedelta(days=7)
+        start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
         return start, now
     elif period == "30d":
-        start = now - timedelta(days=30)
+        start = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
         return start, now
     elif period == "90d":
-        start = now - timedelta(days=90)
+        start = (now - timedelta(days=89)).replace(hour=0, minute=0, second=0, microsecond=0)
         return start, now
     elif period == "1y":
-        start = now - timedelta(days=365)
+        start = (now - timedelta(days=364)).replace(hour=0, minute=0, second=0, microsecond=0)
         return start, now
     else:
         # Default to 30 days
-        start = now - timedelta(days=30)
+        start = (now - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
         return start, now
 
 @router.get("", response_model=dict)
@@ -107,6 +107,7 @@ def get_dashboard_stats(
             key_name = f"rescreening_{t_key[:3]}"
             daily_data[day][key_name] = int(daily_data[day].get(key_name, 0)) + 1
             month_counts["total_rescreenings"] = month_counts["total_rescreenings"] + 1
+            month_counts["total_screenings"] = month_counts["total_screenings"] + 1
             bill_amount = bill_amount + get_billing_rate(True)
         else:
             daily_data[day][t_key] = int(daily_data[day].get(t_key, 0)) + 1
@@ -217,12 +218,13 @@ def get_dashboard_stats(
     ).scalar()
 
     # --- Service Summary Table Data (REAL DATA from database) ---
-    # Count individual screenings this month
+    # Count individual screenings this period
     individual_screenings = db.query(func.count(Screening.id)).join(
         User, User.username == Screening.user_id
     ).filter(
         User.org_id == current_user.org_id,
-        Screening.timestamp >= start_of_month,
+        Screening.timestamp >= start_date,
+        Screening.timestamp <= end_date,
         (Screening.company_name == None) | (Screening.company_name == '')
     ).scalar() or 0
 
@@ -230,18 +232,20 @@ def get_dashboard_stats(
         User, User.username == ScreeningResult.screened_by
     ).filter(
         User.org_id == current_user.org_id,
-        ScreeningResult.screened_at >= start_of_month,
+        ScreeningResult.screened_at >= start_date,
+        ScreeningResult.screened_at <= end_date,
         ScreeningResult.schema_type == 'Person'
     ).scalar() or 0
 
     total_individual = individual_screenings + individual_screenings_v2
 
-    # Count entity/corporate screenings this month
+    # Count entity/corporate screenings this period
     entity_screenings = db.query(func.count(Screening.id)).join(
         User, User.username == Screening.user_id
     ).filter(
         User.org_id == current_user.org_id,
-        Screening.timestamp >= start_of_month,
+        Screening.timestamp >= start_date,
+        Screening.timestamp <= end_date,
         Screening.company_name != None,
         Screening.company_name != ''
     ).scalar() or 0
@@ -250,7 +254,8 @@ def get_dashboard_stats(
         User, User.username == ScreeningResult.screened_by
     ).filter(
         User.org_id == current_user.org_id,
-        ScreeningResult.screened_at >= start_of_month,
+        ScreeningResult.screened_at >= start_date,
+        ScreeningResult.screened_at <= end_date,
         ScreeningResult.schema_type != 'Person'
     ).scalar() or 0
 
@@ -357,13 +362,14 @@ def get_dashboard_stats(
             "removed": ent_removed
         })
 
-    # Get total screenings with matches this month
+    # Get total screenings with matches this period
     total_matches = db.query(func.count(ScreeningResult.id)).join(
         User, User.username == ScreeningResult.screened_by
     ).filter(
         User.org_id == current_user.org_id,
         ScreeningResult.match_count > 0,
-        ScreeningResult.screened_at >= start_of_month
+        ScreeningResult.screened_at >= start_date,
+        ScreeningResult.screened_at <= end_date
     ).scalar() or 0
 
     non_matches = total_screenings_this_month - total_matches
