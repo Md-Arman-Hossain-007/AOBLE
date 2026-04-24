@@ -504,9 +504,73 @@ export default function ScreeningDetailPage() {
     );
   }
   if (error || !data) return (
-    <div className={styles.container} style={{ padding: '100px', textAlign: 'center' }}>
-      <div style={{ color: '#f87171', marginBottom: '16px' }}>{error}</div>
-      <button onClick={() => router.back()} className={styles.backBtn}>Return to List</button>
+    <div className={styles.container} style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        background: 'var(--surface)',
+        border: '1px solid var(--border)',
+        borderRadius: '24px',
+        padding: '48px',
+        maxWidth: '480px',
+        width: '100%',
+        textAlign: 'center',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '24px'
+      }}>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          background: 'rgba(239, 68, 68, 0.1)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#ef4444',
+          marginBottom: '8px'
+        }}>
+          <ShieldAlert size={40} />
+        </div>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--foreground)', margin: '0 0 8px 0' }}>
+            Record Not Found
+          </h2>
+          <p style={{ color: 'var(--secondary)', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
+            {error || "The requested screening intelligence dossier could not be located. It may have been deleted or the ID is incorrect."}
+          </p>
+        </div>
+        <button 
+          onClick={() => router.back()} 
+          style={{
+            background: 'var(--primary)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            padding: '12px 24px',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.2s',
+            marginTop: '8px',
+            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 16px rgba(99, 102, 241, 0.3)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.2)';
+          }}
+        >
+          <ArrowLeft size={18} />
+          Go Back
+        </button>
+      </div>
     </div>
   );
 
