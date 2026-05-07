@@ -694,9 +694,9 @@ const res = await fetch('/api/v2/cases', {
 )}
               </pre>
             </div>
-          </div>
         </div>
-      </main>
-    </div>
-  );
+      </div>
+    </main>
+  </div>
+);
 }
