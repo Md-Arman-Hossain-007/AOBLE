@@ -23,6 +23,7 @@ import Link from "next/link";
 import styles from "./page.module.css";
 import { LoadingSpinner } from "../../../components/LoadingSpinner";
 import { Tooltip } from "../../../components/Tooltip";
+import { CustomDatePicker } from "../../../components/CustomDatePicker";
 
 interface HistoryItem {
   id: string;
@@ -424,21 +425,19 @@ export default function HistoryAuditPage() {
           <div className={styles.filterGrid}>
             <div className={styles.filterGroup}>
               <label className={styles.filterLabel}>Start Date</label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className={styles.filterInput}
+                onChange={setStartDate}
+                placeholder="From date"
               />
             </div>
 
             <div className={styles.filterGroup}>
               <label className={styles.filterLabel}>End Date</label>
-              <input
-                type="date"
+              <CustomDatePicker
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className={styles.filterInput}
+                onChange={setEndDate}
+                placeholder="To date"
               />
             </div>
 

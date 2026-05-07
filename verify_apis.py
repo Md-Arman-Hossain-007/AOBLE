@@ -50,23 +50,23 @@ def run_tests():
     except Exception as e:
         print_result("Get Current User", False, str(e))
 
-    # 4. List Screenings (v2)
+    # 4. List Screenings (v1)
     try:
-        resp = requests.get(f"{API_V1}/screen/results", headers=headers)
-        print_result("List Screening Results", resp.status_code == 200)
+        resp = requests.get(f"{API_V1}/screen/", headers=headers)
+        print_result("List Screening Results (/screen/)", resp.status_code == 200)
     except Exception as e:
         print_result("List Screening Results", False, str(e))
 
-    # 5. Perform Screening
+    # 5. Perform Screening (v2)
     try:
         payload = {
-            "name": "Vladimir Putin",
-            "schema": "Person",
-            "fuzzy": True,
-            "threshold": 0.8
+            "individual": {
+                "name": "Vladimir Putin"
+            },
+            "customer_ref": "TEST-REF-123"
         }
-        resp = requests.post(f"{BASE_URL}/screen", json=payload, headers=headers)
-        print_result("Perform Screening (/screen)", resp.status_code == 200)
+        resp = requests.post(f"{API_V1}/screening/screen", json=payload, headers=headers)
+        print_result("Perform Screening (/screening/screen)", resp.status_code == 200)
     except Exception as e:
         print_result("Perform Screening", False, str(e))
 
@@ -79,8 +79,8 @@ def run_tests():
 
     # 7. Get Stats
     try:
-        resp = requests.get(f"{API_V1}/stats/dashboard", headers=headers)
-        print_result("Get Dashboard Stats", resp.status_code == 200)
+        resp = requests.get(f"{API_V1}/stats/", headers=headers)
+        print_result("Get Dashboard Stats (/stats/)", resp.status_code == 200)
     except Exception as e:
         print_result("Get Dashboard Stats", False, str(e))
 
@@ -93,8 +93,8 @@ def run_tests():
 
     # 9. List Cases
     try:
-        resp = requests.get(f"{API_V1}/case-management/cases", headers=headers)
-        print_result("List Cases", resp.status_code == 200)
+        resp = requests.get(f"{API_V1}/compliance/cases", headers=headers)
+        print_result("List Cases (/compliance/cases)", resp.status_code == 200)
     except Exception as e:
         print_result("List Cases", False, str(e))
 

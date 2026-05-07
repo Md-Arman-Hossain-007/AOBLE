@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import Image from "next/image";
 import CountrySelect from "../../components/CountrySelect";
+import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 // API base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
@@ -270,11 +271,10 @@ export default function ScreenPage() {
                       
                       <div className={styles.formGroup}>
                         <label>Date of Birth</label>
-                        <input 
-                          type="date" 
-                          className={styles.input}
+                        <CustomDatePicker
                           value={dateOfBirth}
-                          onChange={(e) => setDateOfBirth(e.target.value)}
+                          onChange={setDateOfBirth}
+                          placeholder="YYYY-MM-DD"
                         />
                       </div>
                     </>
