@@ -664,7 +664,7 @@ export default function EnterpriseDashboard() {
   // Quick Stats
   const quickStats = useMemo(() => {
     if (!activityStats) return [];
-    const breakdown = activityStats.stats?.breakdown || {};
+    const breakdown: any = activityStats.stats?.breakdown || {};
     return [
       {
         label: "Individuals",
