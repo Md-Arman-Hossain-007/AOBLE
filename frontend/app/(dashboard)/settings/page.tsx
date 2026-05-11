@@ -40,7 +40,7 @@ import styles from "./page.module.css";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { QRCodeSVG } from "qrcode.react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = "/api/v1";
 
 type TabType = "organization" | "compliance" | "security" | "users" | "integrations" | "billing";
 

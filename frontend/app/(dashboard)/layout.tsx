@@ -160,7 +160,7 @@ export default function DashboardLayout({
       
       setIsSearching(true);
       const token = localStorage.getItem("amltab_token");
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const API_URL = "/api/v1";
       
       try {
         const res = await fetch(`${API_URL}/screen?query=${encodeURIComponent(searchQuery)}&limit=5`, {

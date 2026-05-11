@@ -27,7 +27,7 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 import CountrySelect from "../../components/CountrySelect";
 import { Modal } from "../../components/Modal";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = "/api/v1";
 
 interface Address {
   address_lines: string[];

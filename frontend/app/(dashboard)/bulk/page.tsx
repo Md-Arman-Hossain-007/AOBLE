@@ -55,7 +55,7 @@ type SortField = "created_at" | "status" | "filename";
 type SortOrder = "asc" | "desc";
 type FilterStatus = "all" | "pending" | "processing" | "completed" | "failed";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = "/api/v1";
 
 export default function BulkCenterPage() {
   const [jobs, setJobs] = useState<BulkJob[]>([]);
@@ -1051,7 +1051,7 @@ function ResultsModal({ job, onClose }: { job: BulkJob; onClose: () => void }) {
       setError(null);
       try {
         const token = localStorage.getItem("amltab_token");
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+        const API_URL = "/api/v1";
         
         console.log('=== RESULTS MODAL DEBUG ===');
         console.log('Job ID:', job.id);

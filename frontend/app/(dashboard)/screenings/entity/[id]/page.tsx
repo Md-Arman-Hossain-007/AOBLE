@@ -259,7 +259,7 @@ function EntityDetailContent() {
       try {
         setLoading(true);
         const token = localStorage.getItem("amltab_token");
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+        const API_URL = "/api/v1";
         const headers = { 
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
@@ -308,7 +308,7 @@ function EntityDetailContent() {
     if (!screeningId) return;
     try {
       setExportLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const API_URL = "/api/v1";
       const token = localStorage.getItem("amltab_token");
       const response = await fetch(`${API_URL}/screen/${screeningId}/report`, {
         headers: {
@@ -348,7 +348,7 @@ function EntityDetailContent() {
 
     try {
       setMonitoringLoading(true);
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const API_URL = "/api/v1";
       const res = await fetch(`${API_URL}/screen/${screeningId}/monitor`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }

@@ -287,7 +287,7 @@ export default function ScreeningDetailPage() {
     }
   };
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const API_URL = "/api/v1";
 
   const fetchDetail = async () => {
     const token = localStorage.getItem("amltab_token");

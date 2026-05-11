@@ -10,7 +10,7 @@ import CountrySelect from "../../components/CountrySelect";
 import { CustomDatePicker } from "../../components/CustomDatePicker";
 
 // API base URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = "/api/v1";
 
 type ScreeningType = "individual" | "entity";
 

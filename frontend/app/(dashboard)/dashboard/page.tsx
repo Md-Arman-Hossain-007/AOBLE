@@ -77,7 +77,7 @@ interface ActivityStats {
 }
 
 // API Configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+const API_URL = "/api/v1";
 
 // Period mapping for API calls
 const periodToDays: Record<string, number> = {
@@ -117,7 +117,7 @@ export default function EnterpriseDashboard() {
       Authorization: `Bearer ${token}`,
     };
 
-    const days = periodToDays[selectedPeriod || period];
+    const days = periodToDays[selectedPeriod || period] || 30;
 
     try {
       setLoading(true);
