@@ -83,7 +83,7 @@ export default function DashboardLayout({
       if (!token) return;
 
       try {
-        const res = await fetch(`/api/notifications/count`, {
+        const res = await fetch(`/api/v1/notifications/count`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
