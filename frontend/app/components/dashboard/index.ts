@@ -5,3 +5,4 @@ export { BarChartWidget } from "./BarChartWidget";
 export { ActivityFeed } from "./ActivityFeed";
 export { StatCard } from "./StatCard";
 export { ProgressRing } from "./ProgressRing";
+export { default as MatchBreakdownChart } from "./MatchBreakdownChart";

@@ -26,13 +26,15 @@ import {
   ChevronDown,
   CalendarDays,
 } from "lucide-react";
-import { KPICard } from "@/app/components/dashboard/KPICard";
-import { AreaChartWidget } from "@/app/components/dashboard/AreaChartWidget";
-import { DonutChartWidget } from "@/app/components/dashboard/DonutChartWidget";
-import { BarChartWidget } from "@/app/components/dashboard/BarChartWidget";
-import MatchBreakdownChart from "@/app/components/dashboard/MatchBreakdownChart";
-import { ActivityFeed } from "@/app/components/dashboard/ActivityFeed";
-import { StatCard } from "@/app/components/dashboard/StatCard";
+import { 
+  KPICard, 
+  AreaChartWidget, 
+  DonutChartWidget, 
+  BarChartWidget, 
+  ActivityFeed, 
+  StatCard,
+  MatchBreakdownChart
+} from "@/app/components/dashboard";
 import { LoadingSpinner, ErrorState } from "@/app/components/LoadingSpinner";
 import styles from "./page.module.css";
 
