@@ -34,8 +34,8 @@ import {
   ActivityFeed, 
   StatCard,
   MatchBreakdownChart
-} from "@/app/components/dashboard";
-import { LoadingSpinner, ErrorState } from "@/app/components/LoadingSpinner";
+} from "../../components/dashboard";
+import { LoadingSpinner, ErrorState } from "../../components/LoadingSpinner";
 import styles from "./page.module.css";
 
 // Types
