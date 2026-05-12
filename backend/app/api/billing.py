@@ -37,7 +37,7 @@ def _get_or_create_subscription(db: Session, org_id: str) -> Subscription:
     return sub
 
 
-@router.get("/", response_model=schemas.SubscriptionResponse)
+@router.get("", response_model=schemas.SubscriptionResponse)
 def get_billing(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),

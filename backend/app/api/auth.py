@@ -7,6 +7,7 @@ import secrets
 import logging
 import jwt
 import pyotp
+import uuid
 
 from ..db.session import get_db
 from ..models.models import User, Organization, Subscription
@@ -341,6 +342,14 @@ async def register_user(
             detail="Username or email already registered"
         )
     
+    # Check if organization with same name exists
+    existing_org = db.query(Organization).filter(Organization.name == user_data.organization_name).first()
+    if existing_org:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Organization '{user_data.organization_name}' is already registered."
+        )
+
     # Create user
     hashed_password = get_password_hash(user_data.password)
     user = User(
@@ -349,10 +358,25 @@ async def register_user(
         full_name=user_data.full_name,
         password_hash=hashed_password,
         api_key=secrets.token_urlsafe(32),
-        role="Analyst"  # Default role
+        role="Admin"  # User who registers a company is always the Admin
     )
     
     db.add(user)
+    db.flush() 
+    
+    # Create the organization
+    org = Organization(
+        id=str(uuid.uuid4()),
+        name=user_data.organization_name,
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    db.add(org)
+    db.flush()
+    
+    # Link user to organization
+    user.org_id = org.id
+    
     db.commit()
     db.refresh(user)
     
@@ -531,6 +555,7 @@ async def change_password(
     return {"message": "Password has been changed successfully"}
 
 @router.get("/organizations", summary="Get user's organization")
+@router.get("/organizations/", include_in_schema=False)
 async def get_user_organization(
     current_user: User = Depends(check_permission("read")),
     db: Session = Depends(get_db)
@@ -560,6 +585,7 @@ async def get_user_organization(
     }
 
 @router.put("/organizations", summary="Update organization info")
+@router.put("/organizations/", include_in_schema=False)
 async def update_organization(
     data: OrganizationUpdate,
     current_user: User = Depends(RoleChecker(["Admin", "Compliance Officer"])),
@@ -583,8 +609,6 @@ async def update_organization(
     
     if data.name is not None:
         org.name = data.name
-    if data.domain is not None:
-        org.domain = data.domain
     if data.is_active is not None:
         org.is_active = data.is_active
     

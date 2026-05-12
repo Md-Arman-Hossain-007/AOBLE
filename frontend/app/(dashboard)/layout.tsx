@@ -352,7 +352,7 @@ export default function DashboardLayout({
                 <div className={styles.avatar}>{getInitials()}</div>
                 <div className={styles.profileText}>
                   <span className={styles.profileName}>{user?.full_name || user?.username || 'User'}</span>
-                  <span className={styles.profileRole}>{user?.role || 'Compliance Officer'}</span>
+                  <span className={styles.profileRole}>{user?.role || 'Staff Member'}</span>
                 </div>
                 <ChevronDown size={14} className={`${styles.profileChevron} ${profileMenuOpen ? styles.chevronRotated : ''}`} />
               </div>

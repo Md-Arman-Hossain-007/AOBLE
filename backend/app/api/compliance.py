@@ -14,7 +14,7 @@ from .auth import RoleChecker
 
 router = APIRouter()
 
-@router.get("/", response_model=schemas.ComplianceSettingsResponse)
+@router.get("", response_model=schemas.ComplianceSettingsResponse)
 def get_compliance_settings(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker(["Compliance Officer", "Admin"]))
@@ -29,7 +29,7 @@ def get_compliance_settings(
         db.refresh(settings)
     return settings
 
-@router.put("/", response_model=schemas.ComplianceSettingsResponse)
+@router.put("", response_model=schemas.ComplianceSettingsResponse)
 def update_compliance_settings(
     obj_in: schemas.ComplianceSettingsUpdate,
     db: Session = Depends(get_db),

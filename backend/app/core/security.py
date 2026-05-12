@@ -151,13 +151,17 @@ class Permission:
 class Role:
     VIEWER = ["read"]
     ANALYST = ["read", "write", "screen"]
+    COMPLIANCE_OFFICER = ["read", "write", "screen", "manage_compliance", "view_reports"]
+    # Handle space-separated version if needed
+    COMPLIANCE_OFFICER_V2 = ["read", "write", "screen", "manage_compliance", "view_reports"]
     SUPERVISOR = ["read", "write", "delete", "screen", "view_reports"]
     ADMIN = ["read", "write", "delete", "admin", "screen", "manage_users", "view_reports", "manage_compliance"]
 
 def check_permission(required_permission: str):
     def permission_checker(current_user: User = Depends(get_current_active_user)):
-        # Get user's role permissions
-        user_permissions = Role.__dict__.get(current_user.role.upper(), [])
+        # Get user's role permissions (normalize: 'Compliance Officer' -> 'COMPLIANCE_OFFICER')
+        role_key = current_user.role.upper().replace(" ", "_")
+        user_permissions = getattr(Role, role_key, [])
         
         # Admin users have all permissions
         if "admin" in user_permissions:

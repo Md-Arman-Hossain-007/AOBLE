@@ -12,6 +12,7 @@ type Fields = {
   username: string;
   email: string;
   full_name: string;
+  organization_name: string;
   password: string;
   confirm_password: string;
 };
@@ -23,6 +24,7 @@ export default function SignUp() {
     username: "",
     email: "",
     full_name: "",
+    organization_name: "",
     password: "",
     confirm_password: "",
   });
@@ -48,6 +50,7 @@ export default function SignUp() {
     else if (formData.username.length < 3) errs.username = "Username must be at least 3 characters.";
     if (!formData.email.trim()) errs.email = "Email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errs.email = "Please enter a valid email.";
+    if (!formData.organization_name.trim()) errs.organization_name = "Company name is required.";
     if (!formData.password) errs.password = "Password is required.";
     else if (formData.password.length < 6) errs.password = "Password must be at least 6 characters.";
     if (!formData.confirm_password) errs.confirm_password = "Please confirm your password.";
@@ -71,6 +74,7 @@ export default function SignUp() {
           username: formData.username,
           email: formData.email,
           full_name: formData.full_name,
+          organization_name: formData.organization_name,
           password: formData.password,
         }),
       });
@@ -141,6 +145,24 @@ export default function SignUp() {
           />
           {fieldErrors.full_name && (
             <p className={styles.fieldError}><AlertCircle size={13} /> {fieldErrors.full_name}</p>
+          )}
+        </div>
+
+        {/* Company Name */}
+        <div className={styles.formGroup}>
+          <label htmlFor="organization_name">Company Name</label>
+          <input
+            type="text"
+            id="organization_name"
+            name="organization_name"
+            placeholder="Acme Corp"
+            className={`${styles.input} ${fieldErrors.organization_name ? styles.inputError : ""}`}
+            value={formData.organization_name}
+            onChange={handleChange}
+            autoComplete="organization"
+          />
+          {fieldErrors.organization_name && (
+            <p className={styles.fieldError}><AlertCircle size={13} /> {fieldErrors.organization_name}</p>
           )}
         </div>
 

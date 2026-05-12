@@ -10,7 +10,7 @@ from ..core.security import get_password_hash, verify_password
 
 router = APIRouter()
 
-@router.post("/", response_model=schemas.UserResponse)
+@router.post("", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
@@ -87,12 +87,15 @@ def change_password_me(
 
 # --- Admin Endpoints ---
 
-@router.get("/", response_model=List[schemas.UserResponse])
+@router.get("", response_model=List[schemas.UserResponse])
 def read_users(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker(["Admin"]))
 ):
-    users = db.query(models.User).filter(models.User.is_deleted == False).all()
+    users = db.query(models.User).filter(
+        models.User.org_id == current_user.org_id,
+        models.User.is_deleted == False
+    ).all()
     return users
 
 @router.patch("/{username}/role", response_model=schemas.UserResponse)
@@ -102,7 +105,10 @@ def update_user_role(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker(["Admin"]))
 ):
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter(
+        models.User.username == username,
+        models.User.org_id == current_user.org_id
+    ).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -119,7 +125,10 @@ def update_user_status(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker(["Admin"]))
 ):
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter(
+        models.User.username == username,
+        models.User.org_id == current_user.org_id
+    ).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
@@ -135,7 +144,10 @@ def delete_user(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(RoleChecker(["Admin"]))
 ):
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter(
+        models.User.username == username,
+        models.User.org_id == current_user.org_id
+    ).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if user.username == current_user.username:

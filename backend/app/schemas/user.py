@@ -18,10 +18,11 @@ class UserBase(BaseModel):
     username: str
     email: EmailStr
     full_name: str
-    role: Optional[str] = "Compliance Officer"
+    role: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
+    organization_name: str
 
 class UserResponse(UserBase):
     api_key: str
