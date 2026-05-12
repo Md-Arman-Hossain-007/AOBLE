@@ -25,6 +25,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+import traceback
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
 # Include routers
 # V1 legacy screening endpoint disabled
 app.include_router(screening_v2.router)
@@ -50,6 +54,15 @@ app.include_router(external_search.router, prefix=f"{settings.API_V1_STR}/extern
 async def startup_event():
     # Load screening data into memory
     pass
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"GLOBAL ERROR CAUGHT: {str(exc)}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)},
+    )
 
 @app.get("/health")
 def health_check():
