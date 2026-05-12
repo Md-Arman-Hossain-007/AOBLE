@@ -60,6 +60,11 @@ class CaseNoteCreate(BaseModel):
     content: str = Field(..., min_length=5, max_length=2000)
     note_type: NoteType = NoteType.GENERAL
 
+class BulkCaseCreateFromScreenings(BaseModel):
+    screening_result_ids: List[str]
+    priority: CasePriority = CasePriority.MEDIUM
+    assigned_to: Optional[str] = None
+
 class WorkflowStepCompletion(BaseModel):
     completion_notes: Optional[str] = Field(None, max_length=1000)
     step_data: Optional[Dict[str, Any]] = None
@@ -67,7 +72,7 @@ class WorkflowStepCompletion(BaseModel):
 class WorkflowCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
-    steps: List[Dict[str, Any]] = Field(..., min_items=1)
+    steps: List[Dict[str, Any]] = Field(..., min_length=1)
     auto_assign: bool = False
     escalation_rules: List[Dict[str, Any]] = []
 
@@ -190,11 +195,14 @@ class CaseStatsResponse(BaseModel):
     pending_cases: int
     resolved_cases: int
     escalated_cases: int
+    sla_breached: int
+    sla_warning: int
     resolution_rate: float
     avg_resolution_time: float
     case_types: Dict[str, int]
     priorities: Dict[str, int]
     open_cases_by_assignee: List[Dict[str, Any]]
+    daily_trend: List[Dict[str, Any]]
 
 class CaseAnalyticsResponse(BaseModel):
     period: Dict[str, str]
@@ -203,12 +211,12 @@ class CaseAnalyticsResponse(BaseModel):
 
 # Bulk Operation Schemas
 class BulkCaseAssignment(BaseModel):
-    case_ids: List[str] = Field(..., min_items=1)
+    case_ids: List[str] = Field(..., min_length=1)
     assigned_to: str = Field(..., min_length=3)
     reason: Optional[str] = Field(None, max_length=500)
 
 class BulkCaseAction(BaseModel):
-    case_ids: List[str] = Field(..., min_items=1)
+    case_ids: List[str] = Field(..., min_length=1)
     reason: Optional[str] = Field(None, max_length=1000)
 
 class CaseWithSLA(BaseModel):

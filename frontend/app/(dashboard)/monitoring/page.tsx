@@ -433,7 +433,7 @@ export default function MonitoringPage() {
                   <td className={styles.td}>
                     <div className={styles.actions}>
                       <Link
-                        href={`/screenings/${entity.id}`}
+                        href={`/screenings/${entity.customer_ref}`}
                         className={styles.actionBtn}
                         title="View Details"
                       >

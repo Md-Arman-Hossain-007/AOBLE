@@ -74,6 +74,17 @@ async def screen_entity(
     except Exception as e:
         print(f"Error creating notification: {e}")
     
+    if not is_clear:
+        try:
+            from ..services.case_management import CaseManagementService
+            case_service = CaseManagementService(db)
+            case_service.create_case_from_screening(
+                screening_result_id=str(result.screening_id),
+                assigned_to=current_user.username
+            )
+        except Exception as case_err:
+            print(f"Error creating automated case for new screening: {case_err}")
+            
     return {
         "screening_id": screning_id_str,
         "overall_status": status_str,
@@ -738,29 +749,32 @@ async def review_screening(
             matches = result.all_matches or []
             updated = False
             match_caption = "Unknown"
+            target_idx = -1
             
             # Prefer index-based targeting (prevents entity_id collision bug)
             if request.match_idx is not None and 0 <= request.match_idx < len(matches):
-                m = matches[request.match_idx]
+                target_idx = request.match_idx
+                m = matches[target_idx]
                 m["status"] = request.match_status
                 match_caption = m.get("caption") or m.get("name") or "Match"
                 updated = True
             elif request.match_id:
                 # Fallback: find by entity_id (legacy)
-                for m in matches:
+                for i, m in enumerate(matches):
                     mid = m.get("entity_id") or m.get("id")
                     if mid == request.match_id:
+                        target_idx = i
                         m["status"] = request.match_status
                         match_caption = m.get("caption") or m.get("name") or "Match"
                         updated = True
                         break
-            if updated:
+            if updated and target_idx >= 0:
                 from sqlalchemy.orm.attributes import flag_modified
                 result.all_matches = matches
                 flag_modified(result, "all_matches")
                 
                 # Audit individual match decision
-                match_id_display = matches[idx].get("match_id") or f"M-{idx + 1}"
+                match_id_display = matches[target_idx].get("match_id") or f"M-{target_idx + 1}"
                 audit = models.AuditLog(
                     user_id=current_user.username,
                     action="MATCH_DECISION",
@@ -779,6 +793,16 @@ async def review_screening(
                 # Rule: If even ONE match is confirmed, the overall risk is HIGH
                 if request.match_status == "matched":
                     result.risk_level = "HIGH"
+                    # Create automated case
+                    try:
+                        from ..services.case_management import CaseManagementService
+                        case_service = CaseManagementService(db)
+                        case_service.create_case_from_screening(
+                            screening_result_id=str(result.id),
+                            assigned_to=current_user.username
+                        )
+                    except Exception as case_err:
+                        print(f"Error creating automated case in review: {case_err}")
 
         # Update overall review fields
         if request.decision:
@@ -1038,6 +1062,18 @@ async def update_match_decision(
         if new_status != old_status:
             db_screening.status = new_status
             db_screening.final_decision = new_status
+            # --- NEW: Create Case for Review or True Match ---
+            if req.status == "matched" or new_status == "Review":
+                try:
+                    from ..services.case_management import CaseManagementService
+                    case_service = CaseManagementService(db)
+                    case_service.create_case_from_screening(
+                        screening_result_id=str(db_screening.id),
+                        assigned_to=current_user.username
+                    )
+                except Exception as case_err:
+                    print(f"Error creating automated case: {case_err}")
+            
             auto_log = models.AuditLog(
                 user_id=current_user.username,
                 action="status_auto_resolved",

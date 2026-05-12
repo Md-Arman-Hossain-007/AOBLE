@@ -575,8 +575,8 @@ export default function HistoryAuditPage() {
                           <div className={styles.subRowContent}>
                             <h4 className={styles.subTitle}>Matches Found ({item.details.match_count})</h4>
                             <div className={styles.matchList}>
-                              {item.details.matches.map(match => (
-                                <div key={match.id} className={styles.matchItem}>
+                              {item.details.matches.map((match, mIdx) => (
+                                <div key={`${match.id}-${mIdx}`} className={styles.matchItem}>
                                   <div className={styles.matchMain}>
                                     <span className={styles.matchName}>{match.name}</span>
                                     <span className={styles.matchId}>{match.id}</span>
@@ -650,8 +650,8 @@ export default function HistoryAuditPage() {
                                       <tr className={styles.subSubRow}>
                                         <td colSpan={5}>
                                           <div className={styles.matchList} style={{ marginLeft: '40px' }}>
-                                            {ns.matches.map(m => (
-                                              <div key={m.id} className={styles.matchItem} style={{ background: 'var(--background)' }}>
+                                            {ns.matches.map((m, mIdx) => (
+                                              <div key={`${m.id}-${mIdx}`} className={styles.matchItem} style={{ background: 'var(--background)' }}>
                                                 <div className={styles.matchMain}>
                                                   <span className={styles.matchName}>{m.name}</span>
                                                   <span className={styles.matchId} style={{ fontSize: '0.7rem' }}>{m.id}</span>

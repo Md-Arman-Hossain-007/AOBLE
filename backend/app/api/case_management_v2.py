@@ -26,12 +26,21 @@ def get_case_stats(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor"]))
 ):
     """Get comprehensive case management statistics"""
-    from ...services.case_management import CaseManagementService
+    from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
     return service.get_case_stats(current_user.org_id)
 
-@router.get("/", response_model=Dict[str, Any])
+@router.get("/assignable-users", response_model=List[schemas.UserSimpleResponse])
+def get_assignable_users(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor", "Analyst"]))
+):
+    """Get list of users in the organization who can be assigned to cases"""
+    users = db.query(User).filter(User.org_id == current_user.org_id).all()
+    return [{"username": u.username, "full_name": u.full_name, "role": u.role, "email": u.email} for u in users]
+
+@router.get("", response_model=Dict[str, Any])
 def get_cases(
     status: Optional[str] = Query(None, description="Filter by status"),
     priority: Optional[str] = Query(None, description="Filter by priority"),
@@ -124,6 +133,67 @@ def get_cases(
         "skip": skip,
         "limit": limit
     }
+@router.get("/unlinked-screenings", response_model=List[Dict[str, Any]])
+def get_unlinked_screenings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor", "Analyst"]))
+):
+    """Get screenings that don't have an associated case yet"""
+    # Subquery for screening IDs already in cases
+    case_screening_ids = db.query(Case.screening_result_id).filter(
+        Case.org_id == current_user.org_id,
+        Case.screening_result_id.isnot(None)
+    ).all()
+    linked_ids = {str(sid[0]) for sid in case_screening_ids if sid[0]}
+    
+    # Get all screenings for this org (via join with User)
+    screenings = db.query(ScreeningResult).join(
+        User, User.username == ScreeningResult.screened_by
+    ).filter(
+        User.org_id == current_user.org_id
+    ).order_by(ScreeningResult.screened_at.desc()).limit(100).all()
+    
+    # Filter out already linked ones
+    unlinked = []
+    for s in screenings:
+        if str(s.id) not in linked_ids:
+            unlinked.append({
+                "id": str(s.id),
+                "customer_name": s.customer_name,
+                "screened_at": s.screened_at,
+                "risk_level": s.risk_level,
+                "status": s.status,
+                "match_count": s.match_count
+            })
+            
+    return unlinked
+
+@router.post("/bulk-create-from-screenings", response_model=Dict[str, Any])
+def bulk_create_from_screenings(
+    data: schemas.BulkCaseCreateFromScreenings,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor"]))
+):
+    """Create cases for multiple screening results at once"""
+    from ..services.case_management import CaseManagementService
+    
+    service = CaseManagementService(db)
+    success_count = 0
+    failed_count = 0
+    
+    for sid in data.screening_result_ids:
+        try:
+            service.create_case_from_screening(
+                screening_result_id=sid,
+                assigned_to=data.assigned_to,
+                priority=data.priority
+            )
+            success_count += 1
+        except Exception as e:
+            print(f"Error creating case for screening {sid}: {e}")
+            failed_count += 1
+            
+    return {"success": success_count, "failed": failed_count}
 
 @router.get("/{case_id}", response_model=schemas.CaseDetailResponse)
 def get_case_details(
@@ -132,7 +202,7 @@ def get_case_details(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor", "Analyst"]))
 ):
     """Get detailed case information including history, notes, and workflow"""
-    from ...services.case_management import CaseManagementService
+    from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
     case_details = service.get_case_details(case_id)
@@ -143,14 +213,14 @@ def get_case_details(
     
     return case_details
 
-@router.post("/", response_model=schemas.CaseResponse)
+@router.post("", response_model=schemas.CaseResponse)
 def create_case(
     case_data: schemas.CaseCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor"]))
 ):
     """Create a new case"""
-    from ...services.case_management import CaseManagementService, CaseType, CasePriority
+    from ..services.case_management import CaseManagementService, CaseType, CasePriority
     
     service = CaseManagementService(db)
     
@@ -175,7 +245,7 @@ def bulk_assign_cases(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor"]))
 ):
     """Bulk assign multiple cases"""
-    from ...services.case_management import CaseManagementService
+    from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
     results = {"success": 0, "failed": 0, "errors": []}
@@ -208,7 +278,7 @@ def bulk_escalate_cases(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor"]))
 ):
     """Bulk escalate multiple cases"""
-    from ...services.case_management import CaseManagementService
+    from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
     results = {"success": 0, "failed": 0, "errors": []}
@@ -284,7 +354,7 @@ def assign_case(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor"]))
 ):
     """Assign a case to a user"""
-    from ...services.case_management import CaseManagementService
+    from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
     case = db.query(Case).filter(Case.id == case_id, Case.org_id == current_user.org_id).first()
@@ -310,7 +380,7 @@ def update_case_status(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor", "Analyst"]))
 ):
     """Update case status"""
-    from ...services.case_management import CaseManagementService, CaseStatus
+    from ..services.case_management import CaseManagementService, CaseStatus
     
     service = CaseManagementService(db)
     case = db.query(Case).filter(Case.id == case_id, Case.org_id == current_user.org_id).first()
@@ -351,7 +421,7 @@ def add_case_note(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor", "Analyst"]))
 ):
     """Add a note to a case"""
-    from ...services.case_management import CaseManagementService
+    from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
     case = db.query(Case).filter(Case.id == case_id, Case.org_id == current_user.org_id).first()
@@ -506,7 +576,7 @@ def get_case_analytics(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor"]))
 ):
     """Get enhanced case management analytics with trends"""
-    from ...services.case_management import CaseManagementService
+    from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
     
@@ -657,4 +727,5 @@ def complete_workflow_step(
     db.add(history)
     db.commit()
     
+    return {"message": "Workflow step completed successfully"}
     return {"message": "Workflow step completed successfully"}

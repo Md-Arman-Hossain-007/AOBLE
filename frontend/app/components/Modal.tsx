@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import styles from "./Modal.module.css";
 
@@ -35,8 +36,10 @@ export function Modal({
   const overlayRef = useRef<HTMLDivElement>(null);
   const [note, setNote] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -73,7 +76,7 @@ export function Modal({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   // Confirmation modal mode
   const isConfirmMode = onConfirm !== undefined;
@@ -86,7 +89,7 @@ export function Modal({
     }
   };
 
-  return (
+  const modalContent = (
     <div 
       ref={overlayRef}
       className={styles.overlay} 
@@ -152,4 +155,6 @@ export function Modal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

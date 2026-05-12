@@ -44,15 +44,18 @@ def get_all_history(
     start_dt = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.utcnow() - timedelta(days=30)
     end_dt = datetime.strptime(end_date, "%Y-%m-%d") if end_date else datetime.utcnow() + timedelta(days=1)
     
+    # Get all users in the same organization to show organization-wide history
+    user_ids = [u.username for u in db.query(User).filter(User.org_id == current_user.org_id).all()]
+    
     # Get screening history
     if not resource_type or resource_type == "screening":
         screening_query = db.query(Screening).filter(
-            Screening.user_id == current_user.username,
+            Screening.user_id.in_(user_ids),
             Screening.timestamp >= start_dt,
             Screening.timestamp <= end_dt
         )
         
-        if user_id and user_id != current_user.username:
+        if user_id:
             screening_query = screening_query.filter(Screening.user_id == user_id)
         
         if search:
@@ -87,7 +90,7 @@ def get_all_history(
 
         # Get modern ScreeningResult history
         v2_query = db.query(ScreeningResult).filter(
-            ScreeningResult.screened_by == current_user.username,
+            ScreeningResult.screened_by.in_(user_ids),
             ScreeningResult.screened_at >= start_dt,
             ScreeningResult.screened_at <= end_dt
         )
@@ -171,12 +174,12 @@ def get_all_history(
     # Get bulk job history
     if not resource_type or resource_type == "bulk":
         bulk_query = db.query(BulkJob).filter(
-            BulkJob.user_id == current_user.username,
+            BulkJob.user_id.in_(user_ids),
             BulkJob.created_at >= start_dt,
             BulkJob.created_at <= end_dt
         )
         
-        if user_id and user_id != current_user.username:
+        if user_id:
             bulk_query = bulk_query.filter(BulkJob.user_id == user_id)
         
         bulk_jobs = bulk_query.order_by(BulkJob.created_at.desc()).all()
@@ -266,11 +269,15 @@ def get_individual_history(
     """Get history of individual screenings only"""
     from sqlalchemy import or_
     
+    # Parse dates
     start_dt = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.utcnow() - timedelta(days=30)
     end_dt = datetime.strptime(end_date, "%Y-%m-%d") if end_date else datetime.utcnow() + timedelta(days=1)
     
+    # Get all users in the same organization
+    user_ids = [u.username for u in db.query(User).filter(User.org_id == current_user.org_id).all()]
+    
     query = db.query(Screening).filter(
-        Screening.user_id == current_user.username,
+        Screening.user_id.in_(user_ids),
         Screening.company_name == None,  # Individual screenings have no company name
         Screening.timestamp >= start_dt,
         Screening.timestamp <= end_dt
@@ -315,7 +322,7 @@ def get_individual_history(
 
     # Add V2 individual screenings
     v2_query = db.query(ScreeningResult).filter(
-        ScreeningResult.screened_by == current_user.username,
+        ScreeningResult.screened_by.in_(user_ids),
         ScreeningResult.schema_type == 'Person',
         ScreeningResult.screened_at >= start_dt,
         ScreeningResult.screened_at <= end_dt
@@ -376,11 +383,15 @@ def get_entity_history(
     """Get history of entity screenings only"""
     from sqlalchemy import or_
     
+    # Parse dates
     start_dt = datetime.strptime(start_date, "%Y-%m-%d") if start_date else datetime.utcnow() - timedelta(days=30)
     end_dt = datetime.strptime(end_date, "%Y-%m-%d") if end_date else datetime.utcnow() + timedelta(days=1)
     
+    # Get all users in the same organization
+    user_ids = [u.username for u in db.query(User).filter(User.org_id == current_user.org_id).all()]
+    
     query = db.query(Screening).filter(
-        Screening.user_id == current_user.username,
+        Screening.user_id.in_(user_ids),
         Screening.company_name != None,  # Entity screenings have company name
         Screening.timestamp >= start_dt,
         Screening.timestamp <= end_dt
@@ -418,7 +429,7 @@ def get_entity_history(
 
     # Add V2 entity screenings
     v2_query = db.query(ScreeningResult).filter(
-        ScreeningResult.screened_by == current_user.username,
+        ScreeningResult.screened_by.in_(user_ids),
         ScreeningResult.schema_type != 'Person',
         ScreeningResult.screened_at >= start_dt,
         ScreeningResult.screened_at <= end_dt
@@ -603,23 +614,49 @@ def get_history_stats(
     """Get history statistics"""
     start_dt = datetime.utcnow() - timedelta(days=days)
     
-    # Screening stats
-    total_screenings = db.query(Screening).filter(
-        Screening.user_id == current_user.username,
+    # Get all users in the same organization
+    user_ids = [u.username for u in db.query(User).filter(User.org_id == current_user.org_id).all()]
+    
+    # Screening stats (Legacy + V2)
+    total_screenings_legacy = db.query(Screening).filter(
+        Screening.user_id.in_(user_ids),
         Screening.timestamp >= start_dt
     ).count()
     
-    individual_screenings = db.query(Screening).filter(
-        Screening.user_id == current_user.username,
+    total_screenings_v2 = db.query(ScreeningResult).filter(
+        ScreeningResult.screened_by.in_(user_ids),
+        ScreeningResult.screened_at >= start_dt
+    ).count()
+    
+    total_screenings = total_screenings_legacy + total_screenings_v2
+    
+    individual_screenings_legacy = db.query(Screening).filter(
+        Screening.user_id.in_(user_ids),
         Screening.company_name == None,
         Screening.timestamp >= start_dt
     ).count()
     
-    entity_screenings = db.query(Screening).filter(
-        Screening.user_id == current_user.username,
+    individual_screenings_v2 = db.query(ScreeningResult).filter(
+        ScreeningResult.screened_by.in_(user_ids),
+        ScreeningResult.schema_type == 'Person',
+        ScreeningResult.screened_at >= start_dt
+    ).count()
+    
+    individual_screenings = individual_screenings_legacy + individual_screenings_v2
+    
+    entity_screenings_legacy = db.query(Screening).filter(
+        Screening.user_id.in_(user_ids),
         Screening.company_name != None,
         Screening.timestamp >= start_dt
     ).count()
+    
+    entity_screenings_v2 = db.query(ScreeningResult).filter(
+        ScreeningResult.screened_by.in_(user_ids),
+        ScreeningResult.schema_type != 'Person',
+        ScreeningResult.screened_at >= start_dt
+    ).count()
+    
+    entity_screenings = entity_screenings_legacy + entity_screenings_v2
     
     # Case stats
     total_cases = db.query(Case).filter(
@@ -627,29 +664,54 @@ def get_history_stats(
         Case.created_at >= start_dt
     ).count()
     
-    # Daily trend
+    # Daily trend (Legacy + V2)
     daily_trend = []
     for i in range(days):
         day_start = start_dt + timedelta(days=i)
         day_end = day_start + timedelta(days=1)
-        count = db.query(Screening).filter(
-            Screening.user_id == current_user.username,
+        count_legacy = db.query(Screening).filter(
+            Screening.user_id.in_(user_ids),
             Screening.timestamp >= day_start,
             Screening.timestamp < day_end
         ).count()
+        count_v2 = db.query(ScreeningResult).filter(
+            ScreeningResult.screened_by.in_(user_ids),
+            ScreeningResult.screened_at >= day_start,
+            ScreeningResult.screened_at < day_end
+        ).count()
         daily_trend.append({
             "date": day_start.strftime("%Y-%m-%d"),
-            "count": count
+            "count": count_legacy + count_v2
         })
     
-    # Top users
-    from sqlalchemy import func
-    top_users = db.query(
-        Screening.user_id,
-        func.count(Screening.id).label('count')
+    # Top users (Legacy + V2)
+    from sqlalchemy import func, union_all
+    
+    # Use a subquery to combine both screening types for top users
+    from sqlalchemy import cast, String as SQLString
+    
+    legacy_counts = db.query(
+        Screening.user_id.label('user_id'), 
+        cast(Screening.id, SQLString).label('id')
     ).filter(
+        Screening.user_id.in_(user_ids),
         Screening.timestamp >= start_dt
-    ).group_by(Screening.user_id).order_by(func.count(Screening.id).desc()).limit(5).all()
+    )
+    
+    v2_counts = db.query(
+        ScreeningResult.screened_by.label('user_id'), 
+        cast(ScreeningResult.id, SQLString).label('id')
+    ).filter(
+        ScreeningResult.screened_by.in_(user_ids),
+        ScreeningResult.screened_at >= start_dt
+    )
+    
+    combined = legacy_counts.union_all(v2_counts).subquery()
+    
+    top_users = db.query(
+        combined.c.user_id,
+        func.count(combined.c.id).label('count')
+    ).group_by(combined.c.user_id).order_by(func.count(combined.c.id).desc()).limit(5).all()
     
     return {
         "period_days": days,

@@ -75,6 +75,13 @@ class CaseManagementService:
         
         if not screening:
             raise ValueError("Screening result not found")
+            
+        # Check if case already exists for this screening
+        existing_case = self.db.query(Case).filter(
+            Case.screening_result_id == screening_result_id
+        ).first()
+        if existing_case:
+            return existing_case
         
         # Determine case type based on risk level
         case_type = CaseType.SCREENING_MATCH

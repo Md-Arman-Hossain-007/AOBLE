@@ -101,6 +101,22 @@ export default function CaseInboxPage() {
   const [showNewCaseModal, setShowNewCaseModal] = useState(false);
   const [bulkResult, setBulkResult] = useState<{success: number; failed: number} | null>(null);
   
+  // New Case Modal Tabs
+  const [activeTab, setActiveTab] = useState<"manual" | "screening">("manual");
+  
+  // Manual Case Form states
+  const [caseType, setCaseType] = useState("manual_review");
+  const [caseTitle, setCaseTitle] = useState("");
+  const [caseDescription, setCaseDescription] = useState("");
+  const [casePriority, setCasePriority] = useState("medium");
+  const [customerRef, setCustomerRef] = useState("");
+  const [isCreatingCase, setIsCreatingCase] = useState(false);
+
+  // Screening Import states
+  const [unlinkedScreenings, setUnlinkedScreenings] = useState<any[]>([]);
+  const [selectedScreeningIds, setSelectedScreeningIds] = useState<Set<string>>(new Set());
+  const [loadingScreenings, setLoadingScreenings] = useState(false);
+  
   // Form states
   const [assignUsername, setAssignUsername] = useState("");
   const [escalateReason, setEscalateReason] = useState("");
@@ -323,6 +339,17 @@ export default function CaseInboxPage() {
     setProcessing(false);
     setShowUserDropdown(false);
     setAssignableUsers([]);
+    
+    // Reset New Case Form
+    setCaseType("manual_review");
+    setCaseTitle("");
+    setCaseDescription("");
+    setCasePriority("medium");
+    setCustomerRef("");
+    setIsCreatingCase(false);
+    setActiveTab("manual");
+    setUnlinkedScreenings([]);
+    setSelectedScreeningIds(new Set());
   };
 
   // Bulk action handlers
@@ -488,6 +515,109 @@ export default function CaseInboxPage() {
       // Rollback
       setCases(previousCases);
     }
+  };
+
+  const handleCreateCase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = getToken();
+    if (!token) return;
+
+    if (caseTitle.length < 5) {
+      alert("Title must be at least 5 characters");
+      return;
+    }
+    if (caseDescription.length < 10) {
+      alert("Description must be at least 10 characters");
+      return;
+    }
+
+    setIsCreatingCase(true);
+    try {
+      const res = await fetch(`${API_BASE}/compliance/cases`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          case_type: caseType,
+          title: caseTitle,
+          description: caseDescription,
+          priority: casePriority,
+          customer_ref: customerRef || null
+        })
+      });
+
+      if (res.ok) {
+        setShowNewCaseModal(false);
+        resetModals();
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(`Failed to create case: ${err.detail || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Create case error:", err);
+      alert("Network error creating case");
+    } finally {
+      setIsCreatingCase(false);
+    }
+  };
+
+  const fetchUnlinkedScreenings = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    setLoadingScreenings(true);
+    try {
+      const res = await fetch(`${API_BASE}/compliance/cases/unlinked-screenings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setUnlinkedScreenings(await res.json());
+      }
+    } catch (err) {
+      console.error("Fetch unlinked screenings error:", err);
+    } finally {
+      setLoadingScreenings(false);
+    }
+  };
+
+  const handleBulkImportScreenings = async () => {
+    const token = getToken();
+    if (!token || selectedScreeningIds.size === 0) return;
+
+    setIsCreatingCase(true);
+    try {
+      const res = await fetch(`${API_BASE}/compliance/cases/bulk-create-from-screenings`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          screening_result_ids: Array.from(selectedScreeningIds),
+          priority: "medium"
+        })
+      });
+
+      if (res.ok) {
+        setShowNewCaseModal(false);
+        resetModals();
+        fetchData();
+      }
+    } catch (err) {
+      console.error("Bulk import error:", err);
+    } finally {
+      setIsCreatingCase(false);
+    }
+  };
+
+  const toggleScreeningSelection = (id: string) => {
+    const next = new Set(selectedScreeningIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedScreeningIds(next);
   };
 
   const handleExport = () => {
@@ -744,7 +874,11 @@ export default function CaseInboxPage() {
                 : "Create your first case to get started."}
             </p>
             {!hasActiveFilters && (
-              <button className={styles.primaryBtn} style={{ marginTop: '20px' }}>
+              <button 
+                className={styles.primaryBtn} 
+                style={{ marginTop: '20px' }}
+                onClick={() => setShowNewCaseModal(true)}
+              >
                 <Plus size={18} />
                 Create Case
               </button>
@@ -1344,99 +1478,191 @@ export default function CaseInboxPage() {
         )}
       </Modal>
 
-      {/* New Case Modal */}
       <Modal
         isOpen={showNewCaseModal}
-        onClose={() => setShowNewCaseModal(false)}
+        onClose={() => !isCreatingCase && resetModals()}
         title="Create New Case"
-        size="medium"
+        size="large"
         footer={
-          <button className={modalStyles.btn} onClick={() => setShowNewCaseModal(false)} style={{ background: 'var(--primary)', color: 'white' }}>
-            Got it
-          </button>
+          <>
+            <button 
+              className={modalStyles.btn} 
+              onClick={resetModals} 
+              disabled={isCreatingCase}
+              style={{ background: 'var(--surface)', color: 'var(--foreground)', border: '1px solid var(--border)' }}
+            >
+              Cancel
+            </button>
+            {activeTab === "manual" ? (
+              <button 
+                className={modalStyles.btn} 
+                onClick={handleCreateCase}
+                disabled={isCreatingCase || !caseTitle || !caseDescription}
+                style={{ 
+                  background: (isCreatingCase || !caseTitle || !caseDescription) ? 'var(--border)' : 'var(--primary)', 
+                  color: 'white' 
+                }}
+              >
+                {isCreatingCase ? "Creating..." : "Create Case"}
+              </button>
+            ) : (
+              <button 
+                className={modalStyles.btn} 
+                onClick={handleBulkImportScreenings}
+                disabled={isCreatingCase || selectedScreeningIds.size === 0}
+                style={{ 
+                  background: (isCreatingCase || selectedScreeningIds.size === 0) ? 'var(--border)' : 'var(--primary)', 
+                  color: 'white' 
+                }}
+              >
+                {isCreatingCase ? "Importing..." : `Import ${selectedScreeningIds.size} Screening${selectedScreeningIds.size !== 1 ? 's' : ''}`}
+              </button>
+            )}
+          </>
         }
       >
-        <div style={{ display: 'flex', gap: 12, padding: 16, backgroundColor: 'var(--primary-light)', border: '1px solid var(--primary)', borderRadius: 12, marginBottom: 20 }}>
-          <AlertCircleIcon size={20} style={{ color: 'var(--primary)', flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)', margin: '0 0 4px 0' }}>Automatic Case Creation</h4>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--secondary)', margin: 0, lineHeight: 1.5 }}>Cases are automatically created when screening matches are detected. High-risk matches trigger immediate case creation for compliance review.</p>
-          </div>
+        <div className={styles.modalTabs}>
+          <button 
+            className={`${styles.modalTab} ${activeTab === 'manual' ? styles.modalTabActive : ''}`}
+            onClick={() => setActiveTab('manual')}
+          >
+            Manual Form
+          </button>
+          <button 
+            className={`${styles.modalTab} ${activeTab === 'screening' ? styles.modalTabActive : ''}`}
+            onClick={() => {
+              setActiveTab('screening');
+              fetchUnlinkedScreenings();
+            }}
+          >
+            Import from Screening
+          </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-            <div style={{ 
-              width: '32px', 
-              height: '32px', 
-              borderRadius: '8px', 
-              backgroundColor: 'rgba(99, 102, 241, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#6366F1',
-              flexShrink: 0
-            }}>
-              <ShieldAlert size={18} />
+        {activeTab === "manual" ? (
+          <div className={modalStyles.form} style={{ padding: '20px 0' }}>
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.label}>Case Type <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <select
+                className={modalStyles.select}
+                value={caseType}
+                onChange={(e) => setCaseType(e.target.value)}
+                disabled={isCreatingCase}
+              >
+                <option value="manual_review">Manual Review</option>
+                <option value="customer_request">Customer Request</option>
+                <option value="regulatory_inquiry">Regulatory Inquiry</option>
+                <option value="screening_match">Screening Match</option>
+              </select>
             </div>
-            <div>
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)', margin: '0 0 4px 0' }}>
-                Screening Matches
-              </h4>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--secondary)', margin: 0, lineHeight: 1.5 }}>
-                Cases are created for sanctions, PEP, and adverse media matches detected during screening.
-              </p>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-            <div style={{ 
-              width: '32px', 
-              height: '32px', 
-              borderRadius: '8px', 
-              backgroundColor: 'rgba(34, 197, 94, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#22c55e',
-              flexShrink: 0
-            }}>
-              <Zap size={18} />
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.label}>Priority <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {['low', 'medium', 'high', 'critical'].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setCasePriority(p)}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid',
+                      borderColor: casePriority === p ? 'var(--primary)' : 'var(--border)',
+                      backgroundColor: casePriority === p ? 'var(--primary-light)' : 'var(--surface)',
+                      color: casePriority === p ? 'var(--primary)' : 'var(--secondary)',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    disabled={isCreatingCase}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div>
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)', margin: '0 0 4px 0' }}>
-                Priority Assignment
-              </h4>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--secondary)', margin: 0, lineHeight: 1.5 }}>
-                Cases are automatically prioritized based on risk level: Critical, High, Medium, or Low.
-              </p>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-            <div style={{ 
-              width: '32px', 
-              height: '32px', 
-              borderRadius: '8px', 
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#3b82f6',
-              flexShrink: 0
-            }}>
-              <Users size={18} />
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.label}>Case Title <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <input
+                type="text"
+                className={modalStyles.input}
+                placeholder="E.g., Manual Investigation: High Risk Transaction"
+                value={caseTitle}
+                onChange={(e) => setCaseTitle(e.target.value)}
+                disabled={isCreatingCase}
+              />
             </div>
-            <div>
-              <h4 style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)', margin: '0 0 4px 0' }}>
-                Auto-Assignment
-              </h4>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--secondary)', margin: 0, lineHeight: 1.5 }}>
-                Cases can be automatically assigned to compliance officers based on workload and expertise.
-              </p>
+
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.label}>Description <span style={{ color: 'var(--danger)' }}>*</span></label>
+              <textarea
+                className={modalStyles.textarea}
+                placeholder="Provide detailed context for this investigation..."
+                value={caseDescription}
+                onChange={(e) => setCaseDescription(e.target.value)}
+                rows={4}
+                disabled={isCreatingCase}
+              />
+            </div>
+
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.label}>Customer Reference (Optional)</label>
+              <input
+                type="text"
+                className={modalStyles.input}
+                placeholder="E.g., CUST-123456"
+                value={customerRef}
+                onChange={(e) => setCustomerRef(e.target.value)}
+                disabled={isCreatingCase}
+              />
             </div>
           </div>
-        </div>
+        ) : (
+          <div className={styles.screeningImportList}>
+            {loadingScreenings ? (
+              <div style={{ padding: '60px', textAlign: 'center' }}>
+                <LoadingSpinner />
+                <p style={{ marginTop: '16px', color: 'var(--secondary)' }}>Loading unlinked screenings...</p>
+              </div>
+            ) : unlinkedScreenings.length === 0 ? (
+              <div style={{ padding: '60px', textAlign: 'center' }}>
+                <Inbox size={48} style={{ color: 'var(--border)', marginBottom: '16px' }} />
+                <h4 style={{ color: 'var(--foreground)' }}>No unlinked screenings found</h4>
+                <p style={{ color: 'var(--secondary)', fontSize: '0.875rem' }}>All recent screenings already have associated cases.</p>
+              </div>
+            ) : (
+              <div className={styles.screeningGrid}>
+                {unlinkedScreenings.map((s) => (
+                  <div 
+                    key={s.id} 
+                    className={`${styles.screeningItem} ${selectedScreeningIds.has(s.id) ? styles.screeningItemActive : ''}`}
+                    onClick={() => toggleScreeningSelection(s.id)}
+                  >
+                    <div className={styles.screeningCheck}>
+                      {selectedScreeningIds.has(s.id) ? <CheckSquare size={18} /> : <Square size={18} />}
+                    </div>
+                    <div className={styles.screeningInfo}>
+                      <span className={styles.screeningName}>{s.customer_name}</span>
+                      <div className={styles.screeningMeta}>
+                        <span>{new Date(s.screened_at).toLocaleDateString()}</span>
+                        <span className={`${styles.riskBadge} ${styles['risk' + s.risk_level]}`}>{s.risk_level}</span>
+                      </div>
+                    </div>
+                    <div className={styles.screeningMatches}>
+                      <span className={styles.matchCount}>{s.match_count} Matches</span>
+                      <span className={styles.matchStatus}>{s.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );
