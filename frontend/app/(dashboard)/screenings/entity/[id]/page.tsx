@@ -516,7 +516,7 @@ function EntityDetailContent() {
             {screeningMatch?.match_score && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: screeningMatch.match_score >= 80 ? '#f43f5e' : '#f59e0b', fontSize: '9px', fontWeight: 900, letterSpacing: '0.1em', background: 'rgba(255,255,255,0.02)', padding: '2px 10px', borderRadius: '4px', border: '1px solid var(--border)' }}>
                  <Shield size={9} />
-                 <span>{Math.round(screeningMatch.match_score)}% MATCH SCORE</span>
+                 <span>{screeningMatch.match_score <= 1.1 ? Math.round(screeningMatch.match_score * 100) : Math.round(screeningMatch.match_score)}% MATCH SCORE</span>
               </div>
             )}
           </div>

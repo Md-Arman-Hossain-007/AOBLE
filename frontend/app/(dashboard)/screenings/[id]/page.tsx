@@ -655,7 +655,7 @@ export default function ScreeningDetailPage() {
             <span className={data.risk_level === 'HIGH' ? styles.badgeReject : data.risk_level === 'MEDIUM' ? styles.badgeReview : styles.badgeClear} style={{ fontSize: '0.65rem', padding: '4px 10px' }}>
               {data.risk_level}
             </span>
-            <span>{Math.round(data.summary?.max_score || 0)}%</span>
+            <span>{data.summary?.max_score !== undefined ? (data.summary.max_score <= 1.1 ? Math.round(data.summary.max_score * 100) : Math.round(data.summary.max_score)) : 0}%</span>
           </div>
         </div>
         <div className={styles.summaryItem}>
@@ -782,11 +782,11 @@ export default function ScreeningDetailPage() {
                       </div>
                       <span style={{ fontSize: '0.85rem', color: 'var(--secondary)', fontWeight: 600 }}>{match.match_type}</span>
                     </div>
-                    <div className={`${styles.matchScore} ${idx === 0 || Math.round(match.match_score) >= 80 ? styles.matchScoreHigh :
-                        Math.round(match.match_score) >= 60 ? styles.matchScoreMed :
+                    <div className={`${styles.matchScore} ${(idx === 0 || (match.match_score <= 1.1 ? match.match_score * 100 : match.match_score) >= 80) ? styles.matchScoreHigh :
+                        (match.match_score <= 1.1 ? match.match_score * 100 : match.match_score) >= 60 ? styles.matchScoreMed :
                           styles.matchScoreLow
                       }`}>
-                      {Math.round(match.match_score)}% Match
+                      {match.match_score <= 1.1 ? Math.round(match.match_score * 100) : Math.round(match.match_score)}% Match
                     </div>
                   </div>
                   <div className={styles.matchBody}>
