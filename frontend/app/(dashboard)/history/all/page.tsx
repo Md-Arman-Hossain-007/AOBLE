@@ -70,7 +70,7 @@ interface HistoryStats {
 
 type TabType = "all" | "individual" | "entity" | "audit";
 
-const API_BASE = "/api";
+const API_BASE = "/api/v1";
 
 export default function HistoryAuditPage() {
   const [activeTab, setActiveTab] = useState<TabType>("all");

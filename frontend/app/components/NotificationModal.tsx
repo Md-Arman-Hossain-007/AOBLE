@@ -51,7 +51,7 @@ interface NotificationModalProps {
   onUnreadCountChange: (count: number) => void;
 }
 
-const API_BASE = "/api";
+const API_BASE = "/api/v1";
 
 export function NotificationModal({
   isOpen,

@@ -75,7 +75,7 @@ type FilterStatus = "all" | "pending" | "under_review" | "escalated" | "resolved
 type FilterPriority = "all" | "low" | "medium" | "high" | "critical";
 type FilterSLA = "all" | "ok" | "warning" | "breached";
 
-const API_BASE = "/api";
+const API_BASE = "/api/v1";
 
 export default function CaseInboxPage() {
   const [cases, setCases] = useState<Case[]>([]);

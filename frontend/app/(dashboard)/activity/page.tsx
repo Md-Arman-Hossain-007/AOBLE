@@ -36,7 +36,7 @@ interface Notification {
 
 type FilterType = "all" | "unread" | "risk_alert" | "success" | "info" | "screening" | "monitoring";
 
-const API_BASE = "/api";
+const API_BASE = "/api/v1";
 
 export default function NotificationsCenterPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
