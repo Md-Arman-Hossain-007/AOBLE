@@ -57,6 +57,14 @@ async def startup_event():
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    # If it's an HTTPException, let FastAPI handle it normally
+    from fastapi import HTTPException as FastAPIHTTPException
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    
+    if isinstance(exc, (FastAPIHTTPException, StarletteHTTPException)):
+        from fastapi.exception_handlers import http_exception_handler
+        return await http_exception_handler(request, exc)
+        
     print(f"GLOBAL ERROR CAUGHT: {str(exc)}")
     traceback.print_exc()
     return JSONResponse(
