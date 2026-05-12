@@ -79,7 +79,8 @@
 }
 
 .logoHeader img {
-  border-radius: var(--radius-md);
+  display: block;
+  margin: 0 auto;
 }
 
 .formHeader h2 {

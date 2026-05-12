@@ -43,7 +43,7 @@ export default function ForgotPassword() {
     <>
       <div className={styles.formHeader}>
         <div className={styles.logoHeader}>
-          <Image src="/logo_brand_v1.png" alt="AMLTAB" width={40} height={40} />
+          <Image src="/logo_transparent.png" alt="AMLTAB" width={40} height={40} />
         </div>
         <h2>Reset Password</h2>
         <p>Enter your professional email to receive a recovery link.</p>

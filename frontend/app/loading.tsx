@@ -16,7 +16,7 @@ export default function Loading() {
     }}>
       <div className="pulsate" style={{ textAlign: 'center' }}>
         <Image 
-          src="/logo_brand_v1.png" 
+          src="/logo_transparent.png" 
           alt="AMLTAB Loader" 
           width={80} 
           height={80} 

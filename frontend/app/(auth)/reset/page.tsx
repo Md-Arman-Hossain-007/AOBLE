@@ -77,7 +77,7 @@ export default function ResetPasswordConfirm() {
     <>
       <div className={styles.formHeader}>
         <div className={styles.logoHeader}>
-          <Image src="/logo_brand_v1.png" alt="AMLTAB" width={40} height={40} />
+          <Image src="/logo_transparent.png" alt="AMLTAB" width={40} height={40} />
         </div>
         <h2>Create New Password</h2>
         <p>Ensure your new password meets the institutional security policy.</p>

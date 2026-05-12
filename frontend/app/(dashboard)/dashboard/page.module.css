@@ -703,10 +703,7 @@
 }
 
 .modalLogo img {
-  border-radius: 8px;
   object-fit: contain;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  padding: 4px;
 }
 
 .modalLogo h3 {

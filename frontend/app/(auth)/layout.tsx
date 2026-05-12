@@ -12,7 +12,7 @@ export default function AuthLayout({
       <div className={styles.authLeft}>
         <div className={styles.authLeftContent}>
           <Link href="/" className={styles.logo}>
-            <Image src="/logo_brand_v1.png" alt="AMLTAB Logo" width={40} height={40} />
+            <Image src="/logo_transparent.png" alt="AMLTAB Logo" width={40} height={40} />
             AMLTAB
           </Link>
           <div className={styles.authIntro}>

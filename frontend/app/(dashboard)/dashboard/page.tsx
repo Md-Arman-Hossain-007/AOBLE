@@ -1009,7 +1009,7 @@ export default function EnterpriseDashboard() {
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div className={styles.modalLogo}>
-                <img src="/logo_brand_v1.png" alt="AMLTAB" width={32} height={32} />
+                <img src="/logo_transparent.png" alt="AMLTAB" width={32} height={32} />
                 <h3>Export Dashboard Report</h3>
               </div>
               <button 

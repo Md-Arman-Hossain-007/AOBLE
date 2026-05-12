@@ -109,7 +109,7 @@ export default function SignUp() {
     <>
       <div className={styles.formHeader}>
         <div className={styles.logoHeader}>
-          <Image src="/logo_brand_v1.png" alt="AMLTAB" width={40} height={40} />
+          <Image src="/logo_transparent.png" alt="AMLTAB" width={40} height={40} />
         </div>
         <h2>Create an account</h2>
         <p>Start your 14-day free trial, no credit card required</p>

@@ -13,7 +13,7 @@ export default function PublicLayout({
       <header className={styles.navbar}>
         <div className={styles.navInner}>
           <Link href="/" className={styles.navLogo}>
-            <Image src="/logo_brand_v1.png" alt="AMLTAB Logo" width={32} height={32} />
+            <Image src="/logo_transparent.png" alt="AMLTAB Logo" width={32} height={32} />
             AMLTAB
           </Link>
 
@@ -43,7 +43,7 @@ export default function PublicLayout({
         <div className={styles.footerInner}>
           <div className={styles.footerBrand}>
             <div className={styles.footerLogo}>
-              <Image src="/logo_brand_v1.png" alt="AMLTAB Logo" width={28} height={28} />
+              <Image src="/logo_transparent.png" alt="AMLTAB Logo" width={28} height={28} />
               AMLTAB
             </div>
             <p>Next-generation enterprise screening built for modern compliance teams.</p>

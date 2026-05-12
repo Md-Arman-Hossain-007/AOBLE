@@ -24,9 +24,9 @@ export const metadata = {
   },
   description: "Enterprise SaaS for AML and KYC screening against PEP, Sanctions, and Watchlists.",
   icons: {
-    icon: "/logo_brand_v1.png",
-    shortcut: "/logo_brand_v1.png",
-    apple: "/logo_brand_v1.png",
+    icon: "/logo_transparent.png",
+    shortcut: "/logo_transparent.png",
+    apple: "/logo_transparent.png",
   },
 };
 

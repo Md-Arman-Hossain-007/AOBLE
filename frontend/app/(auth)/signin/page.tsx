@@ -139,7 +139,7 @@ export default function SignIn() {
       <>
         <div className={styles.formHeader}>
           <div className={styles.logoHeader}>
-            <Image src="/logo_brand_v1.png" alt="AMLTAB" width={40} height={40} />
+            <Image src="/logo_transparent.png" alt="AMLTAB" width={40} height={40} />
           </div>
           <h2>Verification Required</h2>
           <p>Please enter the 6-digit code from your authenticator app.</p>
@@ -190,7 +190,7 @@ export default function SignIn() {
     <>
       <div className={styles.formHeader}>
         <div className={styles.logoHeader}>
-          <Image src="/logo_brand_v1.png" alt="AMLTAB" width={40} height={40} />
+          <Image src="/logo_transparent.png" alt="AMLTAB" width={40} height={40} />
         </div>
         <h2>Welcome back</h2>
         <p>Log in to your AMLTAB account to continue</p>

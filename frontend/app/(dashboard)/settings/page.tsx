@@ -1231,7 +1231,7 @@ export default function SettingsPage() {
                     level="H"
                     includeMargin={true}
                     imageSettings={{
-                      src: "/logo_brand_v1.png",
+                      src: "/logo_transparent.png",
                       x: undefined,
                       y: undefined,
                       height: 40,

@@ -197,7 +197,7 @@ export default function DashboardLayout({
       }}>
         <div className="pulsate">
           <Image 
-            src="/logo_brand_v1.png" 
+            src="/logo_transparent.png" 
             alt="AMLTAB Logo" 
             width={80} 
             height={80} 
@@ -214,7 +214,7 @@ export default function DashboardLayout({
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.logoArea}>
           <div className={styles.logoWrapper}>
-            <Image src="/logo_brand_v1.png" alt="AMLTAB Logo" width={32} height={32} />
+            <Image src="/logo_transparent.png" alt="AMLTAB Logo" width={32} height={32} />
           </div>
           <span className={styles.logoText}>AMLTAB</span>
           {sidebarOpen && (

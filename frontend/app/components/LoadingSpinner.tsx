@@ -39,7 +39,7 @@ export function LoadingSpinner({
     <div className={`${styles.spinnerContainer} ${styles[size]}`}>
       <div className={styles.logoWrapper}>
         <Image 
-          src="/logo_brand_v1.png" 
+          src="/logo_transparent.png" 
           alt="AMLTAB Logo" 
           width={size === "small" ? 24 : size === "large" ? 96 : 72}
           height={size === "small" ? 24 : size === "large" ? 96 : 72}
@@ -85,7 +85,7 @@ export function ErrorState({
     <div className={`${styles.errorContainer} ${fullPage ? styles.fullPage : ""}`}>
       <div className={styles.logoWrapper}>
         <Image 
-          src="/logo_brand_v1.png" 
+          src="/logo_transparent.png" 
           alt="AMLTAB Logo" 
           width={64}
           height={64}
