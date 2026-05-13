@@ -38,14 +38,14 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  padding: 0 40px; /* Matched with header padding */
+  padding: 0 24px; /* Reduced padding for tighter fit */
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   border-bottom: 1px solid var(--border); /* Standardized border */
   background: var(--sidebar-bg);
   color: var(--sidebar-fg);
-  gap: 12px;
+  gap: 6px;
   transition: all 0.3s ease;
 }
 
@@ -198,7 +198,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 40px;
+  padding: 0 24px;
   background-color: var(--surface);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);

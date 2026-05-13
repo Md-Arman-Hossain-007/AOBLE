@@ -30,7 +30,7 @@
 .navLogo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--foreground);
@@ -128,7 +128,7 @@
 .footerLogo {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--foreground);
