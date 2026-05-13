@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import styles from "../page.module.css";
+import { LoadingSpinner } from "../../../components/LoadingSpinner";
 
 interface CaseDetail {
   case: any;
@@ -37,20 +38,41 @@ export default function CaseDetailPage() {
   const router = useRouter();
   const [data, setData] = useState<CaseDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newNote, setNewNote] = useState("");
   const [submittingNote, setSubmittingNote] = useState(false);
 
   const fetchCase = async () => {
     const token = localStorage.getItem("amltab_token");
+    if (!token) {
+      setError("Authentication token missing. Please sign in again.");
+      setLoading(false);
+      return;
+    }
+
     try {
+      setError(null);
       const res = await fetch(`${API_URL}/compliance/cases/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      
       if (res.ok) {
         setData(await res.json());
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 404) {
+          setError("Investigation case not found in our records.");
+        } else if (res.status === 403) {
+          setError("Access denied. You do not have permission to view this case.");
+        } else if (res.status === 401) {
+          setError("Your session has expired. Please sign in again.");
+        } else {
+          setError(errData.detail || `Server error (${res.status}). Please contact support.`);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch case detail:", err);
+      setError("Connection error. Please check your internet and try again.");
     } finally {
       setLoading(false);
     }
@@ -105,8 +127,31 @@ export default function CaseDetailPage() {
     }
   };
 
-  if (loading) return <div className={styles.container} style={{padding: '100px', textAlign: 'center'}}>Loading investigation details...</div>;
-  if (!data) return <div className={styles.container} style={{padding: '100px', textAlign: 'center', color: '#f87171'}}>Case not found.</div>;
+  if (loading) return (
+    <div className={styles.container} style={{padding: '100px', textAlign: 'center'}}>
+      <LoadingSpinner text="Synthesizing investigation data..." />
+    </div>
+  );
+
+  if (error) return (
+    <div className={styles.container} style={{padding: '100px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px'}}>
+      <div style={{ color: '#f87171', fontSize: '1.2rem', fontWeight: 600 }}>{error}</div>
+      <button 
+        onClick={() => fetchCase()}
+        style={{ padding: '10px 20px', borderRadius: '8px', backgroundColor: '#4F46E5', color: '#fff', border: 'none', cursor: 'pointer' }}
+      >
+        Retry Connection
+      </button>
+      <button 
+        onClick={() => router.push('/history/all')}
+        style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', textDecoration: 'underline' }}
+      >
+        Return to History
+      </button>
+    </div>
+  );
+
+  if (!data) return null;
 
   return (
     <div className={styles.container}>
@@ -155,7 +200,7 @@ export default function CaseDetailPage() {
                       <span style={{ fontSize: '0.9rem', color: '#fff' }}>{data.related_screening.schema_type}</span>
                    </div>
                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'right' }}>
-                      <Link href={`/screenings/${data.related_screening.screening_id}`} style={{ color: '#4F46E5', fontSize: '0.875rem', fontWeight: 600 }}>
+                      <Link href={`/screenings/${data.related_screening.id}`} style={{ color: '#4F46E5', fontSize: '0.875rem', fontWeight: 600 }}>
                          View Raw Screening
                       </Link>
                    </div>

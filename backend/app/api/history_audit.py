@@ -99,9 +99,14 @@ def get_all_history(
             search_term = f"%{search}%"
             v2_query = v2_query.filter(ScreeningResult.customer_name.ilike(search_term))
 
+        # Get all cases for this org to link screenings to cases
+        cases_in_org = db.query(Case).filter(Case.org_id == current_user.org_id).all()
+        screening_to_case = {str(c.screening_result_id): str(c.id) for c in cases_in_org if c.screening_result_id}
+
         v2_screenings = v2_query.order_by(ScreeningResult.screened_at.desc()).all()
         for s in v2_screenings:
             normalized_status = s.status.lower() if s.status else "unknown"
+            s_id_str = str(s.id)
             
             # Map matches to minimal data
             minimal_matches = []
@@ -115,7 +120,7 @@ def get_all_history(
                     })
 
             history_items.append({
-                "id": str(s.id),
+                "id": s_id_str,
                 "type": "screening",
                 "action": f"Screening completed - {s.status.capitalize()}",
                 "subject": s.customer_name,
@@ -123,6 +128,7 @@ def get_all_history(
                 "user_id": s.screened_by,
                 "timestamp": s.screened_at.isoformat(),
                 "status": normalized_status,
+                "case_id": screening_to_case.get(s_id_str),
                 "details": {
                     "match_count": s.match_count,
                     "risk_level": s.risk_level,
@@ -151,6 +157,8 @@ def get_all_history(
             search_term = f"%{search}%"
             case_query = case_query.filter(Case.title.ilike(search_term))
         
+        cases = case_query.all()
+        print(f"DEBUG: Found {len(cases)} cases for org {current_user.org_id}")
         cases = case_query.order_by(Case.created_at.desc()).all()
         for c in cases:
             # Normalize status to lowercase

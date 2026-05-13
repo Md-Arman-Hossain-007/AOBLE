@@ -44,6 +44,7 @@ class CaseCreate(BaseModel):
     title: str = Field(..., min_length=5, max_length=200)
     description: str = Field(..., min_length=10)
     priority: CasePriority = CasePriority.MEDIUM
+    assigned_to: Optional[str] = None
     customer_ref: Optional[str] = None
 
 class CaseStatusUpdate(BaseModel):

@@ -1167,3 +1167,109 @@
   border-radius: 4px;
   border: 1px solid var(--border);
 }
+
+/* Toast Notifications */
+.toastContainer {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  min-width: 320px;
+  max-width: 480px;
+  padding: 16px;
+  background-color: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-left: 4px solid var(--primary);
+  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.toast_success { border-left-color: #10b981; }
+.toast_error { border-left-color: #ef4444; }
+.toast_info { border-left-color: #3b82f6; }
+
+.toastIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.toast_success .toastIcon { color: #10b981; }
+.toast_error .toastIcon { color: #ef4444; }
+.toast_info .toastIcon { color: #3b82f6; }
+
+.toastContent {
+  flex: 1;
+}
+
+.toastMessage {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.toastClose {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toastClose:hover {
+  background-color: var(--surface-hover);
+  color: var(--foreground);
+}
+
+.modalTabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  background-color: var(--surface-hover);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.modalTab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalTabActive {
+  background-color: var(--surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}

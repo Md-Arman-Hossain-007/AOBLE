@@ -161,7 +161,7 @@ class CaseManagementService:
         
         # Assign case
         if assigned_to:
-            self.assign_case(case.id, assigned_to)
+            self.assign_case(case.id, assigned_to, assigned_by=created_by)
         else:
             self.auto_assign_case(case.id)
         
@@ -197,12 +197,25 @@ class CaseManagementService:
         if user.org_id != case.org_id:
             raise ValueError("User not in same organization")
         
+        # Resolve assigned_by - must be a valid user for foreign key constraint
+        final_assigned_by = assigned_by or "system"
+        system_user = self.db.query(User).filter(User.username == final_assigned_by).first()
+        
+        if not system_user:
+            # Fallback: try to find an admin in the organization
+            admin = self.db.query(User).filter(User.org_id == case.org_id, User.role == "Admin").first()
+            if admin:
+                final_assigned_by = admin.username
+            else:
+                # Last resort: use the person being assigned to
+                final_assigned_by = assigned_to
+
         # Create assignment
         assignment = CaseAssignment(
             id=str(uuid4()),
             case_id=case_id,
             assigned_to=assigned_to,
-            assigned_by=assigned_by or "system",
+            assigned_by=final_assigned_by,
             assigned_at=datetime.utcnow(),
             reason=reason or "Manual assignment",
             status="active"
@@ -220,14 +233,14 @@ class CaseManagementService:
             case_id, 
             "assigned", 
             f"Case assigned to {assigned_to}",
-            assigned_by or "system"
+            final_assigned_by
         )
         
         # Create notification
         self._create_case_notification(case_id, f"Assigned to {assigned_to}")
         
         audit_logger.log_action(
-            assigned_by or "system", "case_assigned", "case_management", 
+            final_assigned_by, "case_assigned", "case_management", 
             {"case_id": case_id, "assigned_to": assigned_to}, 
             True
         )
@@ -710,12 +723,28 @@ class CaseManagementService:
         metadata: Optional[Dict[str, Any]] = None
     ):
         """Add entry to case history"""
+        # Ensure performed_by is a valid user
+        user = self.db.query(User).filter(User.username == performed_by).first()
+        final_performed_by = performed_by
+        
+        if not user:
+            # Try to find any user from the case's organization
+            case = self.db.query(Case).filter(Case.id == case_id).first()
+            if case:
+                admin = self.db.query(User).filter(User.org_id == case.org_id, User.role == "Admin").first()
+                if admin:
+                    final_performed_by = admin.username
+                else:
+                    first_user = self.db.query(User).filter(User.org_id == case.org_id).first()
+                    if first_user:
+                        final_performed_by = first_user.username
+
         history = CaseHistory(
             id=str(uuid4()),
             case_id=case_id,
             action=action,
             description=description,
-            performed_by=performed_by,
+            performed_by=final_performed_by,
             metadata=metadata or {},
             created_at=datetime.utcnow()
         )

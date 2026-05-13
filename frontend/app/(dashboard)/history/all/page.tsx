@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
-  Users
+  Users,
+  Shield,
+  Activity
 } from "lucide-react";
 import Link from "next/link";
 import styles from "./page.module.css";
@@ -56,6 +58,7 @@ interface HistoryItem {
     }>;
     [key: string]: any;
   };
+  case_id?: string;
 }
 
 interface HistoryStats {
@@ -68,12 +71,14 @@ interface HistoryStats {
   top_users: Array<{user_id: string; count: number}>;
 }
 
-type TabType = "all" | "individual" | "entity" | "audit";
+type TabType = "all" | "screening" | "case" | "audit";
+type ScreeningType = "all" | "individual" | "entity";
 
 const API_BASE = "/api/v1";
 
 export default function HistoryAuditPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("all");
+  const [activeTab, setActiveTab] = useState<TabType>("screening");
+  const [screeningType, setScreeningType] = useState<ScreeningType>("all");
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [stats, setStats] = useState<HistoryStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,19 +129,35 @@ export default function HistoryAuditPage() {
 
     setLoading(true);
     try {
+      let endpoint = `${API_BASE}/history/all`;
+      const params: Record<string, string> = {
+        skip: ((currentPage - 1) * pageSize).toString(),
+        limit: pageSize.toString(),
+        ...(startDate && { start_date: startDate }),
+        ...(endDate && { end_date: endDate }),
+        ...(userId && { user_id: userId }),
+        ...(statusFilter !== "all" && { status: statusFilter }),
+        ...(searchQuery && { search: searchQuery })
+      };
+
+      if (activeTab === 'audit') {
+        endpoint = `${API_BASE}/history/audit-logs`;
+      } else if (activeTab === 'screening') {
+        if (screeningType === 'individual') {
+          endpoint = `${API_BASE}/history/individual`;
+        } else if (screeningType === 'entity') {
+          endpoint = `${API_BASE}/history/entity`;
+        } else {
+          params.resource_type = 'screening';
+        }
+      } else if (activeTab === 'case') {
+        params.resource_type = 'case';
+      }
+
       const [historyRes, statsRes] = await Promise.all([
-        fetch(
-          `${API_BASE}/history/${activeTab === 'audit' ? 'audit-logs' : activeTab}?` + new URLSearchParams({
-            skip: ((currentPage - 1) * pageSize).toString(),
-            limit: pageSize.toString(),
-            ...(startDate && { start_date: startDate }),
-            ...(endDate && { end_date: endDate }),
-            ...(userId && { user_id: userId }),
-            ...(statusFilter !== "all" && { status: statusFilter }),
-            ...(searchQuery && { search: searchQuery })
-          }),
-          { headers: { Authorization: `Bearer ${token}` } }
-        ),
+        fetch(`${endpoint}?` + new URLSearchParams(params), {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
         fetch(`${API_BASE}/history/stats?days=30`, {
           headers: { Authorization: `Bearer ${token}` }
         })
@@ -153,7 +174,7 @@ export default function HistoryAuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, currentPage, pageSize, startDate, endDate, userId, statusFilter, searchQuery]);
+  }, [activeTab, screeningType, currentPage, pageSize, startDate, endDate, userId, statusFilter, searchQuery]);
 
   useEffect(() => {
     fetchData();
@@ -165,9 +186,18 @@ export default function HistoryAuditPage() {
 
     setExporting(true);
     try {
+      let exportType: string = activeTab;
+      if (activeTab === "audit") exportType = "audit";
+      else if (activeTab === "screening") {
+        exportType = screeningType === "all" ? "all" : screeningType;
+      } else if (activeTab === "case") {
+        // Backend doesn't have a specific case export yet, fallback to all for now or handles cases?
+        exportType = "all"; 
+      }
+
       const res = await fetch(
         `${API_BASE}/history/export?` + new URLSearchParams({
-          export_type: activeTab === "audit" ? "audit" : activeTab,
+          export_type: exportType,
           ...(startDate && { start_date: startDate }),
           ...(endDate && { end_date: endDate })
         }),
@@ -288,15 +318,16 @@ export default function HistoryAuditPage() {
       case 'entity': return <Building2 size={16} />;
       case 'case': return <FileText size={16} />;
       case 'bulk': return <Users size={16} />;
+      case 'screening': return <Shield size={16} />;
       default: return <History size={16} />;
     }
   };
 
   const tabs = [
-    { key: "all" as TabType, label: "All History", icon: <History size={16} /> },
-    { key: "individual" as TabType, label: "Individual", icon: <User size={16} /> },
-    { key: "entity" as TabType, label: "Entity", icon: <Building2 size={16} /> },
-    { key: "audit" as TabType, label: "Audit Logs", icon: <FileText size={16} /> }
+    { key: "screening" as TabType, label: "Screenings", icon: <Shield size={16} /> },
+    { key: "case" as TabType, label: "Cases", icon: <FileText size={16} /> },
+    { key: "all" as TabType, label: "Full History", icon: <History size={16} /> },
+    { key: "audit" as TabType, label: "System Audit", icon: <Activity size={16} /> }
   ];
 
   return (
@@ -364,21 +395,49 @@ export default function HistoryAuditPage() {
         </section>
       )}
 
-      {/* Tabs */}
-      <section className={styles.tabs}>
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ''}`}
-            onClick={() => {
-              setActiveTab(tab.key);
-              setCurrentPage(1);
-            }}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      {/* Primary Tabs */}
+      <section className={styles.tabContainer}>
+        <div className={styles.tabs}>
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ''}`}
+              onClick={() => {
+                setActiveTab(tab.key);
+                setCurrentPage(1);
+              }}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Sub-filters for Screenings */}
+        {activeTab === 'screening' && (
+          <div className={styles.subFilters}>
+            <button 
+              className={`${styles.subFilterBtn} ${screeningType === 'all' ? styles.subFilterBtnActive : ''}`}
+              onClick={() => setScreeningType('all')}
+            >
+              All Types
+            </button>
+            <button 
+              className={`${styles.subFilterBtn} ${screeningType === 'individual' ? styles.subFilterBtnActive : ''}`}
+              onClick={() => setScreeningType('individual')}
+            >
+              <User size={14} />
+              Individual
+            </button>
+            <button 
+              className={`${styles.subFilterBtn} ${screeningType === 'entity' ? styles.subFilterBtnActive : ''}`}
+              onClick={() => setScreeningType('entity')}
+            >
+              <Building2 size={14} />
+              Entity
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Toolbar */}
@@ -490,7 +549,7 @@ export default function HistoryAuditPage() {
                   <th className={styles.th}>Type</th>
                   <th className={styles.th}>Subject</th>
                   <th className={styles.th}>Action</th>
-                  <th className={styles.th}>Status</th>
+                  {activeTab !== 'audit' && <th className={styles.th}>Status</th>}
                   <th className={styles.th}>User</th>
                   <th className={styles.th}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -498,7 +557,7 @@ export default function HistoryAuditPage() {
                       <Tooltip content="When this action was performed" position="top" />
                     </span>
                   </th>
-                  <th className={styles.th} style={{ width: '80px' }}>Actions</th>
+                  {activeTab !== 'audit' && <th className={styles.th} style={{ width: '80px' }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -533,11 +592,20 @@ export default function HistoryAuditPage() {
                       <td className={styles.td}>
                         <span className={styles.action}>{item.action}</span>
                       </td>
-                      <td className={styles.td}>
-                        <span className={`${styles.statusBadge} ${getStatusColor(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </td>
+                      {activeTab !== 'audit' && (
+                        <td className={styles.td}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className={`${styles.statusBadge} ${getStatusColor(item.status)}`}>
+                              {item.status}
+                            </span>
+                            {item.case_id && (
+                              <span className={styles.statusBadge} style={{ backgroundColor: 'rgba(79, 70, 229, 0.1)', color: '#4F46E5', border: '1px solid rgba(79, 70, 229, 0.2)' }}>
+                                Escalated
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      )}
                       <td className={styles.td}>
                         <div className={styles.userCell}>
                           <div className={styles.userAvatar}>
@@ -552,26 +620,29 @@ export default function HistoryAuditPage() {
                           {formatDate(item.timestamp)}
                         </div>
                       </td>
-                      <td className={styles.td}>
-                        <Link 
-                          href={
-                            item.type === 'case' ? `/cases/${item.id}` :
-                            item.type === 'bulk' ? `/bulk` :
-                            `/screenings/${item.id}`
-                          } 
-                          className={styles.actionLink}
-                          title="View details"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Eye size={16} />
-                        </Link>
-                      </td>
+                      {activeTab !== 'audit' && (
+                        <td className={styles.td}>
+                          <Link 
+                            href={
+                              (item.type === 'screening' || item.type === 'individual' || item.type === 'entity') ? `/screenings/${item.id}` :
+                              (item.type === 'case' || item.case_id) ? `/cases` :
+                              item.type === 'bulk' ? `/bulk` :
+                              `/screenings/${item.id}`
+                            } 
+                            className={styles.actionLink}
+                            title="View details"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Eye size={16} />
+                          </Link>
+                        </td>
+                      )}
                     </tr>
 
                     {/* Sub-row for Screening Matches */}
                     {expandedRows.has(item.id) && item.type !== 'bulk' && item.details?.matches && item.details.matches.length > 0 && (
                       <tr className={styles.subRow}>
-                        <td colSpan={7}>
+                        <td colSpan={activeTab === 'audit' ? 5 : 7}>
                           <div className={styles.subRowContent}>
                             <h4 className={styles.subTitle}>Matches Found ({item.details.match_count})</h4>
                             <div className={styles.matchList}>
@@ -598,7 +669,7 @@ export default function HistoryAuditPage() {
                     {/* Sub-row for Bulk Screening */}
                     {expandedRows.has(item.id) && item.type === 'bulk' && item.details?.nested_screenings && (
                       <tr className={styles.subRow}>
-                        <td colSpan={7}>
+                        <td colSpan={activeTab === 'audit' ? 5 : 7}>
                           <div className={styles.subRowContent}>
                             <h4 className={styles.subTitle}>Bulk Screening Details ({item.details.nested_screenings.length} records)</h4>
                             <table className={styles.nestedTable}>

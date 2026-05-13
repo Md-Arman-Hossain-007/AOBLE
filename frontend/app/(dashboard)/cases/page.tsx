@@ -30,6 +30,8 @@ import {
   Shield,
   Eye,
   Check,
+  XCircle,
+  Info,
   AlertCircle as AlertCircleIcon
 } from "lucide-react";
 import Link from "next/link";
@@ -110,6 +112,7 @@ export default function CaseInboxPage() {
   const [caseDescription, setCaseDescription] = useState("");
   const [casePriority, setCasePriority] = useState("medium");
   const [customerRef, setCustomerRef] = useState("");
+  const [manualAssignee, setManualAssignee] = useState("");
   const [isCreatingCase, setIsCreatingCase] = useState(false);
 
   // Screening Import states
@@ -139,6 +142,39 @@ export default function CaseInboxPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+  
+  // Toast notifications
+  const [toasts, setToasts] = useState<any[]>([]);
+  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+  };
+  const removeToast = (id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const Toast = ({ message, type, onClose }: { message: string, type: 'success' | 'error' | 'info', onClose: () => void }) => {
+    useEffect(() => {
+      const timer = setTimeout(onClose, 5000);
+      return () => clearTimeout(timer);
+    }, [onClose]);
+
+    return (
+      <div className={`${styles.toast} ${styles['toast_' + type]}`}>
+        <div className={styles.toastIcon}>
+          {type === 'success' && <CheckCircle2 size={18} />}
+          {type === 'error' && <XCircle size={18} />}
+          {type === 'info' && <Info size={18} />}
+        </div>
+        <div className={styles.toastContent}>
+          <p className={styles.toastMessage}>{message}</p>
+        </div>
+        <button className={styles.toastClose} onClick={onClose}>
+          <X size={14} />
+        </button>
+      </div>
+    );
+  };
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -337,6 +373,7 @@ export default function CaseInboxPage() {
     setEscalateReason("");
     setCloseReason("");
     setProcessing(false);
+    setManualAssignee("");
     setShowUserDropdown(false);
     setAssignableUsers([]);
     
@@ -523,11 +560,11 @@ export default function CaseInboxPage() {
     if (!token) return;
 
     if (caseTitle.length < 5) {
-      alert("Title must be at least 5 characters");
+      addToast("Title must be at least 5 characters", "error");
       return;
     }
     if (caseDescription.length < 10) {
-      alert("Description must be at least 10 characters");
+      addToast("Description must be at least 10 characters", "error");
       return;
     }
 
@@ -544,6 +581,7 @@ export default function CaseInboxPage() {
           title: caseTitle,
           description: caseDescription,
           priority: casePriority,
+          assigned_to: manualAssignee || null,
           customer_ref: customerRef || null
         })
       });
@@ -552,13 +590,14 @@ export default function CaseInboxPage() {
         setShowNewCaseModal(false);
         resetModals();
         fetchData();
+        addToast("Case created successfully", "success");
       } else {
         const err = await res.json();
-        alert(`Failed to create case: ${err.detail || 'Unknown error'}`);
+        addToast(`Failed to create case: ${err.detail || 'Unknown error'}`, "error");
       }
     } catch (err) {
       console.error("Create case error:", err);
-      alert("Network error creating case");
+      addToast("Network error creating case", "error");
     } finally {
       setIsCreatingCase(false);
     }
@@ -678,7 +717,10 @@ export default function CaseInboxPage() {
             <Download size={16} />
             Export
           </button>
-          <button className={styles.primaryBtn} onClick={() => setShowNewCaseModal(true)}>
+          <button className={styles.primaryBtn} onClick={() => {
+            setShowNewCaseModal(true);
+            fetchAssignableUsers();
+          }}>
             <Plus size={18} />
             New Case
           </button>
@@ -877,7 +919,10 @@ export default function CaseInboxPage() {
               <button 
                 className={styles.primaryBtn} 
                 style={{ marginTop: '20px' }}
-                onClick={() => setShowNewCaseModal(true)}
+                onClick={() => {
+                  setShowNewCaseModal(true);
+                  fetchAssignableUsers();
+                }}
               >
                 <Plus size={18} />
                 Create Case
@@ -1621,6 +1666,23 @@ export default function CaseInboxPage() {
                 disabled={isCreatingCase}
               />
             </div>
+
+            <div className={modalStyles.formGroup}>
+              <label className={modalStyles.label}>Assign To (Optional)</label>
+              <select
+                className={modalStyles.select}
+                value={manualAssignee}
+                onChange={(e) => setManualAssignee(e.target.value)}
+                disabled={isCreatingCase}
+              >
+                <option value="">Select a user...</option>
+                {assignableUsers.map((user) => (
+                  <option key={user.username} value={user.username}>
+                    {user.full_name} ({user.role})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         ) : (
           <div className={styles.screeningImportList}>
@@ -1664,6 +1726,18 @@ export default function CaseInboxPage() {
           </div>
         )}
       </Modal>
+
+      {/* Toast Notifications */}
+      <div className={styles.toastContainer}>
+        {toasts.map(t => (
+          <Toast 
+            key={t.id} 
+            message={t.message} 
+            type={t.type} 
+            onClose={() => removeToast(t.id)} 
+          />
+        ))}
+      </div>
     </div>
   );
 }

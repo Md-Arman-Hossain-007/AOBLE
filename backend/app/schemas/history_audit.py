@@ -12,6 +12,7 @@ class HistoryItem(BaseModel):
     timestamp: str
     status: str
     details: Optional[Dict[str, Any]] = None
+    case_id: Optional[str] = None
 
 class HistoryListResponse(BaseModel):
     items: List[HistoryItem]

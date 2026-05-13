@@ -202,13 +202,26 @@ def get_case_details(
     current_user: User = Depends(RoleChecker(["Compliance Officer", "Admin", "Supervisor", "Analyst"]))
 ):
     """Get detailed case information including history, notes, and workflow"""
+    print(f"DEBUG: Fetching case {case_id} for user {current_user.username} (org: {current_user.org_id})")
     from ..services.case_management import CaseManagementService
     
     service = CaseManagementService(db)
-    case_details = service.get_case_details(case_id)
+    try:
+        case_details = service.get_case_details(case_id)
+    except ValueError as e:
+        print(f"DEBUG: CaseManagementService error for {case_id}: {e}")
+        raise HTTPException(status_code=404, detail="Case not found")
+    except Exception as e:
+        print(f"DEBUG: Unexpected error fetching case {case_id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+    
+    if not case_details or not case_details.get("case"):
+        print(f"DEBUG: Case {case_id} not found in database (returned empty details)")
+        raise HTTPException(status_code=404, detail="Case not found")
     
     # Verify organization
     if case_details["case"].org_id != current_user.org_id:
+        print(f"DEBUG: Org mismatch for case {case_id}. Case org: {case_details['case'].org_id}, User org: {current_user.org_id}")
         raise HTTPException(status_code=404, detail="Case not found")
     
     return case_details
