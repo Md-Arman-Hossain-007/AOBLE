@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import styles from "./page.module.css";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { FULL_EXAMPLE_RESPONSE, CLEAR_EXAMPLE_RESPONSE, COMPANY_EXAMPLE_RESPONSE, COMPANY_CLEAR_EXAMPLE_RESPONSE } from './example-response';
 
 export default function APIDocsPage() {
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,7 @@ export default function APIDocsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [lang, setLang] = useState<"curl" | "node" | "python">("curl");
+  const [responseType, setResponseType] = useState<"ind_match" | "ind_clear" | "com_match" | "com_clear">("ind_match");
 
   useEffect(() => {
     // Simulate loading and check for API key in localStorage
@@ -154,7 +156,7 @@ export default function APIDocsPage() {
 
                 <div className={styles.endpoint}>
                   <span className={styles.endpointMethod}>BASE_URL</span>
-                  <code>https://api.amltab.com/api/v1</code>
+                  <code>https://api.amltab.com/api/v1/amltab</code>
                 </div>
 
                 <h2 className={styles.sectionHeading}>Institutional Standards</h2>
@@ -190,12 +192,12 @@ export default function APIDocsPage() {
                   The AMLTAB API uses Bearer Token authentication. All requests must be made over HTTPS to ensure credential security.
                 </p>
                 <div className={styles.settingsCard} style={{ background: 'var(--surface-hover)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                  <h3 className={styles.cardTitle} style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '12px' }}>Bearer Token Standard</h3>
+                  <h3 className={styles.cardTitle} style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '12px' }}>Custom API Header</h3>
                   <p className={styles.paragraph} style={{ fontSize: '0.9rem' }}>
-                    Include your organization's secret API key in the <code>Authorization</code> header of every request.
+                    Include your organization's secret API key in the <code>amltab-api-key</code> header of every request.
                   </p>
                   <div className={styles.codeBlock} style={{ marginTop: '16px' }}>
-                    <code>Authorization: Bearer {'{YOUR_SECRET_KEY}'}</code>
+                    <code>amltab-api-key: {'{YOUR_SECRET_KEY}'}</code>
                   </div>
                 </div>
                 <div style={{ marginTop: '32px', display: 'flex', gap: '16px', padding: '24px', borderRadius: '16px', background: 'rgba(239, 68, 68, 0.03)', border: '1px solid rgba(239, 68, 68, 0.1)' }}>
@@ -230,7 +232,7 @@ export default function APIDocsPage() {
                     <tr>
                       <td><code>401</code></td>
                       <td style={{ color: '#ef4444', fontWeight: 700 }}>Unauthorized</td>
-                      <td className={styles.paramDesc}>Invalid or expired API Key. Verify the <code>Authorization</code> header.</td>
+                      <td className={styles.paramDesc}>Invalid or expired API Key. Verify the <code>amltab-api-key</code> header.</td>
                     </tr>
                     <tr>
                       <td><code>429</code></td>
@@ -256,46 +258,94 @@ export default function APIDocsPage() {
                 
                 <div className={styles.endpoint}>
                   <span className={styles.endpointMethod}>POST</span>
-                  <code>/api/v1/screenings/v2</code>
+                  <code>/api/v1/amltab/screenings/</code>
                 </div>
 
                 <h3 className={styles.sectionHeading}>Polymorphic Payload</h3>
                 <p className={styles.paragraph}>The screening request is polymorphic. You must provide either the <code>individual</code> or <code>entity</code> object based on the subject type.</p>
                 
+                <h3 className={styles.sectionHeading}>Individual Screening Payload</h3>
+                <p className={styles.paragraph}>Required parameters when <code>type</code> is set to <code>individual</code>.</p>
                 <table className={styles.paramTable}>
                   <thead>
                     <tr><th>Parameter</th><th>Type</th><th>Requirement</th><th>Description</th></tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td><span className={styles.paramName}>individual</span></td>
-                      <td className={styles.paramType}>object</td>
-                      <td>Conditional</td>
-                      <td className={styles.paramDesc}>Required for person screening. Fields: <code>name</code> (Required), <code>birth_date</code>, <code>nationality</code>, <code>id_number</code>.</td>
-                    </tr>
-                    <tr>
-                      <td><span className={styles.paramName}>entity</span></td>
-                      <td className={styles.paramType}>object</td>
-                      <td>Conditional</td>
-                      <td className={styles.paramDesc}>Required for company screening. Fields: <code>name</code> (Required), <code>registration_number</code>, <code>country</code>.</td>
-                    </tr>
-                    <tr>
-                      <td><span className={styles.paramName}>customer_ref</span></td>
+                      <td><span className={styles.paramName}>type</span></td>
                       <td className={styles.paramType}>string</td>
                       <td><span className={styles.requiredBadge}>Required</span></td>
-                      <td className={styles.paramDesc}>Your internal reference ID. Maximum 64 characters.</td>
+                      <td className={styles.paramDesc}>Set to <code>individual</code>.</td>
+                    </tr>
+                    <tr>
+                      <td><span className={styles.paramName}>first_name</span></td>
+                      <td className={styles.paramType}>string</td>
+                      <td><span className={styles.requiredBadge}>Required</span></td>
+                      <td className={styles.paramDesc}>Subject's given name.</td>
+                    </tr>
+                    <tr>
+                      <td><span className={styles.paramName}>last_name</span></td>
+                      <td className={styles.paramType}>string</td>
+                      <td><span className={styles.requiredBadge}>Required</span></td>
+                      <td className={styles.paramDesc}>Subject's family name.</td>
+                    </tr>
+                    <tr>
+                      <td><span className={styles.paramName}>dob</span></td>
+                      <td className={styles.paramType}>string</td>
+                      <td>Optional</td>
+                      <td className={styles.paramDesc}>Date of birth (e.g., <code>1990-01-01</code>).</td>
+                    </tr>
+                    <tr>
+                      <td><span className={styles.paramName}>country</span></td>
+                      <td className={styles.paramType}>string</td>
+                      <td>Optional</td>
+                      <td className={styles.paramDesc}>Subject's country of residence or nationality.</td>
                     </tr>
                     <tr>
                       <td><span className={styles.paramName}>threshold</span></td>
-                      <td className={styles.paramType}>float</td>
+                      <td className={styles.paramType}>int</td>
                       <td>Optional</td>
-                      <td className={styles.paramDesc}>Sensitivity of the fuzzy match algorithm. Range: <code>0.0</code> to <code>1.0</code>. Defaults to organization setting (usually <code>0.65</code>).</td>
+                      <td className={styles.paramDesc}>Match sensitivity (0-100). Default: <code>80</code>.</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <h3 className={styles.sectionHeading} style={{ marginTop: '48px' }}>Company Screening Payload</h3>
+                <p className={styles.paragraph}>Required parameters when <code>type</code> is set to <code>company</code>.</p>
+                <table className={styles.paramTable}>
+                  <thead>
+                    <tr><th>Parameter</th><th>Type</th><th>Requirement</th><th>Description</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span className={styles.paramName}>type</span></td>
+                      <td className={styles.paramType}>string</td>
+                      <td><span className={styles.requiredBadge}>Required</span></td>
+                      <td className={styles.paramDesc}>Set to <code>company</code>.</td>
                     </tr>
                     <tr>
-                      <td><span className={styles.paramName}>algorithm</span></td>
+                      <td><span className={styles.paramName}>name</span></td>
+                      <td className={styles.paramType}>string</td>
+                      <td><span className={styles.requiredBadge}>Required</span></td>
+                      <td className={styles.paramDesc}>Legal name of the entity.</td>
+                    </tr>
+                    <tr>
+                      <td><span className={styles.paramName}>registration_number</span></td>
                       <td className={styles.paramType}>string</td>
                       <td>Optional</td>
-                      <td className={styles.paramDesc}>Specific match logic to apply. Options: <code>logic-v2</code> (Default), <code>name-based</code>.</td>
+                      <td className={styles.paramDesc}>Official company registration/tax number. Can be <code>null</code>.</td>
+                    </tr>
+                    <tr>
+                      <td><span className={styles.paramName}>country</span></td>
+                      <td className={styles.paramType}>string</td>
+                      <td>Optional</td>
+                      <td className={styles.paramDesc}>Country of incorporation or operation.</td>
+                    </tr>
+                    <tr>
+                      <td><span className={styles.paramName}>threshold</span></td>
+                      <td className={styles.paramType}>int</td>
+                      <td>Optional</td>
+                      <td className={styles.paramDesc}>Match sensitivity (0-100). Default: <code>85</code>.</td>
                     </tr>
                   </tbody>
                 </table>
@@ -470,30 +520,31 @@ export default function APIDocsPage() {
               <div className={styles.codeBlock}>
                 <pre style={{ margin: 0 }}>
                   {lang === 'curl' ? (
-`curl -X POST https://api.amltab.com/api/v1/screenings/v2 \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+`curl -X POST https://api.amltab.com/api/v1/amltab/screenings/ \\
+  -H "amltab-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
-    "individual": {
-      "name": "Artem Uss",
-      "birth_date": "1982-04-22"
-    },
-    "customer_ref": "REF-9921",
-    "threshold": 0.85
+    "type": "individual",
+    "first_name": "kim",
+    "last_name": "jong_un",
+    "dob": "1990-1234-23",
+    "country": "Afghanistan",
+    "threshold": 80
   }'`
                   ) : lang === 'node' ? (
-`const response = await fetch('https://api.amltab.com/api/v1/screenings/v2', {
+`const response = await fetch('https://api.amltab.com/api/v1/amltab/screenings/', {
   method: 'POST',
   headers: {
-    'Authorization': 'Bearer YOUR_API_KEY',
+    'amltab-api-key': 'YOUR_API_KEY',
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    individual: {
-      name: 'Artem Uss',
-      birth_date: '1982-04-22'
-    },
-    customer_ref: 'REF-9921'
+    type: 'individual',
+    first_name: 'kim',
+    last_name: 'jong_un',
+    dob: '1990-1234-23',
+    country: 'Afghanistan',
+    threshold: 80
   })
 });
 
@@ -501,17 +552,17 @@ const data = await response.json();`
                   ) : (
 `import requests
 
-url = "https://api.amltab.com/api/v1/screenings/v2"
+url = "https://api.amltab.com/api/v1/amltab/screenings/"
 payload = {
-    "individual": {
-        "name": "Artem Uss",
-        "birth_date": "1982-04-22"
-    },
-    "customer_ref": "REF-9921",
-    "threshold": 0.85
+    "type": "individual",
+    "first_name": "kim",
+    "last_name": "jong_un",
+    "dob": "1990-1234-23",
+    "country": "Afghanistan",
+    "threshold": 80
 }
 headers = {
-    "Authorization": "Bearer YOUR_API_KEY",
+    "amltab-api-key": "YOUR_API_KEY",
     "Content-Type": "application/json"
 }
 
@@ -602,97 +653,75 @@ const res = await fetch('/api/v2/cases', {
             )}
 
             <div className={styles.codeBlock} style={{ background: 'rgba(255,255,255,0.03)', borderStyle: 'dashed' }}>
-              <div style={{ color: 'var(--primary)', fontWeight: 800, marginBottom: '8px', fontSize: '0.75rem' }}>RESPONSE OBJECT</div>
-              <pre style={{ margin: 0, color: '#94a3b8' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <div style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.75rem' }}>RESPONSE OBJECT</div>
+                {activeSection === "screening" && (
+                  <div className={styles.responseHeader}>
+                    <div className={styles.toggleGroup}>
+                      <button 
+                        className={`${styles.toggleBtn} ${responseType === 'ind_match' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setResponseType('ind_match')}
+                      >
+                        Ind. Match
+                      </button>
+                      <button 
+                        className={`${styles.toggleBtn} ${responseType === 'ind_clear' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setResponseType('ind_clear')}
+                      >
+                        Ind. Clear
+                      </button>
+                      <button 
+                        className={`${styles.toggleBtn} ${responseType === 'com_match' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setResponseType('com_match')}
+                      >
+                        Com. Match
+                      </button>
+                      <button 
+                        className={`${styles.toggleBtn} ${responseType === 'com_clear' ? styles.toggleBtnActive : ''}`}
+                        onClick={() => setResponseType('com_clear')}
+                      >
+                        Com. Clear
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <pre style={{ margin: 0, color: '#94a3b8', maxHeight: '600px', overflowY: 'auto', paddingRight: '10px' }} className={styles.customScrollbar}>
 {activeSection === "bulk" ? (
-`{
-  "job_id": "bulk_9281a",
-  "status": "processing",
-  "total": 1500,
-  "processed": 42,
-  "started_at": "2024-04-22T12:00:00Z"
-}`
+  JSON.stringify({
+    "job_id": "bulk_9281a",
+    "status": "processing",
+    "total": 1500,
+    "processed": 42,
+    "started_at": "2024-04-22T12:00:00Z"
+  }, null, 2)
 ) : activeSection === "cases" ? (
-`{
-  "case_id": "CASE-1021",
-  "status": "open",
-  "priority": "HIGH",
-  "assigned_to": "officer_12",
-  "created_at": "2024-04-22T12:00:00Z"
-}`
+  JSON.stringify({
+    "case_id": "CASE-1021",
+    "status": "open",
+    "priority": "HIGH",
+    "assigned_to": "officer_12",
+    "created_at": "2024-04-22T12:00:00Z"
+  }, null, 2)
 ) : activeSection === "audit" ? (
-`{
-  "total": 450,
-  "logs": [
-    {
-      "id": "log_1",
-      "type": "screening",
-      "action": "view_report",
-      "timestamp": "2024-04-22T10:00:00Z"
-    }
-  ]
-}`
+  JSON.stringify({
+    "total": 450,
+    "logs": [
+      {
+        "id": "log_1",
+        "type": "screening",
+        "action": "view_report",
+        "timestamp": "2024-04-22T10:00:00Z"
+      }
+    ]
+  }, null, 2)
 ) : (
-`{
-  "screening_id": "scr_9281a",
-  "status": "success",
-  "risk_level": "HIGH",
-  "match_count": 12,
-  "verdict": "potential_match",
-  "matches": [
-    {
-      "match_id": "M-1",
-      "entity_id": "Q5521",
-      "caption": "Artem Alexandrovich Uss",
-      "score": 0.98,
-      "risk_level": "HIGH",
-      "topic_risk": 0.95,
-      "primary_topic": "Sanctions",
-      "datasets": ["EU Sanctions", "OFAC - SDN"],
-      "birth_dates": ["1982-04-22"],
-      "nationalities": ["Russian Federation"],
-      "sanctions": [
-        {
-          "authority": ["EU Council", "US Treasury"],
-          "reason": ["Money laundering", "Sanction evasion"],
-          "source_url": ["https://eur-lex.europa.eu/..."]
-        }
-      ]
-    },
-    {
-      "match_id": "M-2",
-      "entity_id": "Q1234",
-      "caption": "Petro Oleksiyovych Poroshenko",
-      "score": 0.82,
-      "risk_level": "MEDIUM",
-      "topic_risk": 0.70,
-      "primary_topic": "PEP",
-      "datasets": ["Politically Exposed Persons"],
-      "positions": ["Former President of Ukraine", "Member of Parliament"],
-      "countries": ["Ukraine"]
-    },
-    {
-      "match_id": "M-3",
-      "entity_id": "AM-991",
-      "caption": "Alexander Vinnik",
-      "score": 0.88,
-      "risk_level": "HIGH",
-      "topic_risk": 0.92,
-      "primary_topic": "Adverse Media",
-      "datasets": ["Global Adverse Media Index"],
-      "sources": [
-        {
-          "title": "Crypto laundering mastermind arrested in Greece",
-          "publisher": "Reuters",
-          "source_url": "https://www.reuters.com/..."
-        }
-      ]
-    }
-  ],
-  "duration_ms": 452
-}`
+  responseType === 'ind_match' ? JSON.stringify(FULL_EXAMPLE_RESPONSE, null, 2) : 
+  responseType === 'ind_clear' ? JSON.stringify(CLEAR_EXAMPLE_RESPONSE, null, 2) : 
+  responseType === 'com_match' ? JSON.stringify(COMPANY_EXAMPLE_RESPONSE, null, 2) : 
+  JSON.stringify(COMPANY_CLEAR_EXAMPLE_RESPONSE, null, 2)
 )}
-              </pre>
+</pre>
             </div>
         </div>
       </div>

@@ -23,8 +23,26 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const yearGridRef = useRef<HTMLDivElement>(null);
 
-  // Parse value string to Date object
-  const selectedDate = value ? new Date(value) : null;
+  // Helper to parse YYYY-MM-DD to local Date
+  const parseLocalDate = (val: string) => {
+    if (!val) return null;
+    const parts = val.split('-');
+    if (parts.length >= 3) {
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    }
+    return new Date(val);
+  };
+
+  // Helper to format Date to YYYY-MM-DD in local time
+  const formatLocalDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  // Parse value string to Date object using local time
+  const selectedDate = parseLocalDate(value);
 
   // Calendar logic helpers
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -48,8 +66,8 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   const handleDateSelect = (day: number) => {
     const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day);
-    // Format as YYYY-MM-DD
-    const formatted = newDate.toISOString().split("T")[0];
+    // Format as YYYY-MM-DD using local time
+    const formatted = formatLocalDate(newDate);
     onChange(formatted);
     setIsOpen(false);
   };
@@ -67,7 +85,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
   const handleToday = () => {
     const today = new Date();
-    const formatted = today.toISOString().split("T")[0];
+    const formatted = formatLocalDate(today);
     onChange(formatted);
     setViewDate(today);
     setIsOpen(false);
@@ -89,16 +107,18 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   // Sync viewDate with value when it changes externally
   useEffect(() => {
     if (value && !isOpen) {
-      setViewDate(new Date(value));
+      const parsed = parseLocalDate(value);
+      if (parsed) setViewDate(parsed);
     }
   }, [value, isOpen]);
 
   // Scroll active year into view when picker opens
   useEffect(() => {
     if (showYearPicker && yearGridRef.current) {
-      const activeYear = yearGridRef.current.querySelector(`.${styles.active}`);
+      const activeYear = yearGridRef.current.querySelector(`.${styles.active}`) as HTMLElement;
       if (activeYear) {
-        activeYear.scrollIntoView({ block: "center", behavior: "auto" });
+        // Use scrollTop instead of scrollIntoView to avoid scrolling the entire page layout
+        yearGridRef.current.scrollTop = activeYear.offsetTop - (yearGridRef.current.clientHeight / 2) + (activeYear.clientHeight / 2);
       }
     }
   }, [showYearPicker]);
@@ -146,12 +166,13 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           type="text"
           readOnly
           placeholder={placeholder}
-          value={value ? new Date(value).toLocaleDateString() : ""}
+          value={selectedDate ? selectedDate.toLocaleDateString() : ""}
           onClick={() => setIsOpen(!isOpen)}
           className={`${styles.dateInput} ${isOpen ? styles.active : ""}`}
         />
         {value && (
           <button 
+            type="button"
             className={styles.clearInputBtn} 
             onClick={(e) => { e.stopPropagation(); onChange(""); }}
             aria-label="Clear date"
@@ -173,16 +194,16 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
               <ChevronDown size={14} className={`${styles.chevron} ${showYearPicker ? styles.up : ""}`} />
             </div>
             <div className={styles.navButtons}>
-              <button className={styles.navBtn} onClick={handlePrevYear} title="Previous Year">
+              <button type="button" className={styles.navBtn} onClick={handlePrevYear} title="Previous Year">
                 <ChevronsLeft size={18} />
               </button>
-              <button className={styles.navBtn} onClick={handlePrevMonth} title="Previous Month">
+              <button type="button" className={styles.navBtn} onClick={handlePrevMonth} title="Previous Month">
                 <ChevronLeft size={18} />
               </button>
-              <button className={styles.navBtn} onClick={handleNextMonth} title="Next Month">
+              <button type="button" className={styles.navBtn} onClick={handleNextMonth} title="Next Month">
                 <ChevronRight size={18} />
               </button>
-              <button className={styles.navBtn} onClick={handleNextYear} title="Next Year">
+              <button type="button" className={styles.navBtn} onClick={handleNextYear} title="Next Year">
                 <ChevronsRight size={18} />
               </button>
             </div>
@@ -215,10 +236,10 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
           )}
 
           <div className={styles.calendarFooter}>
-            <button className={`${styles.footerBtn} ${styles.clearBtn}`} onClick={handleClear}>
+            <button type="button" className={`${styles.footerBtn} ${styles.clearBtn}`} onClick={handleClear}>
               Clear
             </button>
-            <button className={`${styles.footerBtn} ${styles.todayBtn}`} onClick={handleToday}>
+            <button type="button" className={`${styles.footerBtn} ${styles.todayBtn}`} onClick={handleToday}>
               Today
             </button>
           </div>

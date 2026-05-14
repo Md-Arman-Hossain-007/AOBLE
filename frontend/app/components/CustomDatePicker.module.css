@@ -237,20 +237,15 @@
   background-color: var(--primary-soft);
 }
 
-/* Month/Year Selection (Optional Overlay) */
+/* Month/Year Selection */
 .selectorOverlay {
-  position: absolute;
-  top: 70px;
-  left: 20px;
-  right: 20px;
-  bottom: 20px;
   background-color: var(--surface);
-  z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  padding: 12px;
+  padding: 12px 0;
   border-radius: 12px;
+  max-height: 240px;
   overflow-y: auto;
 }
 

@@ -157,18 +157,18 @@ export default function DashboardLayout({
         setSearchResults([]);
         return;
       }
-      
+
       setIsSearching(true);
       const token = localStorage.getItem("amltab_token");
       const API_URL = "/api/v1";
-      
+
       try {
         const res = await fetch(`${API_URL}/screen?query=${encodeURIComponent(searchQuery)}&limit=5`, {
           headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-        
+
         if (res.ok) {
           const data = await res.json();
           setSearchResults(data);
@@ -187,20 +187,20 @@ export default function DashboardLayout({
   // Show loading while checking auth
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         height: '100vh',
         width: '100vw',
         backgroundColor: 'var(--background)'
       }}>
         <div className="pulsate">
-          <Image 
-            src="/logo_transparent.png" 
-            alt="AMLTAB Logo" 
-            width={80} 
-            height={80} 
+          <Image
+            src="/logo_transparent.png"
+            alt="AMLTAB Logo"
+            width={80}
+            height={80}
             priority
           />
         </div>
@@ -218,8 +218,8 @@ export default function DashboardLayout({
           </div>
           <span className={styles.logoText}>AMLTAB</span>
           {sidebarOpen && (
-            <button 
-              className={styles.mobileMenuBtn} 
+            <button
+              className={styles.mobileMenuBtn}
               style={{ marginLeft: 'auto', color: 'white' }}
               onClick={() => setSidebarOpen(false)}
             >
@@ -227,16 +227,16 @@ export default function DashboardLayout({
             </button>
           )}
         </div>
-        
+
         <nav className={styles.nav}>
           {navItems.map((item: any) => {
             const Icon = item.icon;
             // Check if current path matches the nav item
             const isActive = item.href
               ? (pathname === item.href ||
-                 (item.href === '/dashboard' && pathname === '/') ||
-                 (item.href === '/history/all' && pathname.startsWith('/history')) ||
-                 (item.href === '/monitoring' && pathname === '/monitoring'))
+                (item.href === '/dashboard' && pathname === '/') ||
+                (item.href === '/history/all' && pathname.startsWith('/history')) ||
+                (item.href === '/monitoring' && pathname === '/monitoring'))
               : false;
 
             return (
@@ -270,7 +270,7 @@ export default function DashboardLayout({
         {/* Header */}
         <header className={styles.header}>
           <div className={styles.headerLeft}>
-            <button 
+            <button
               className={styles.mobileMenuBtn}
               onClick={() => setSidebarOpen(true)}
             >
@@ -279,10 +279,10 @@ export default function DashboardLayout({
             <div className={styles.searchContainer} style={{ position: 'relative' }}>
               <div className={styles.searchBar}>
                 <Search className={styles.searchIcon} size={18} />
-                <input 
+                <input
                   ref={searchInputRef}
-                  type="text" 
-                  placeholder="Search entities, screenings, cases..." 
+                  type="text"
+                  placeholder="Search entities, screenings, cases..."
                   className={styles.searchInput}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -293,7 +293,7 @@ export default function DashboardLayout({
                   </div>
                 )}
               </div>
-              
+
               {/* Search Results Dropdown */}
               {searchQuery && (searchResults.length > 0 || isSearching) && (
                 <div className={styles.searchResultsDropdown}>
@@ -303,8 +303,8 @@ export default function DashboardLayout({
                     </div>
                   ) : (
                     searchResults.map((result: any) => (
-                      <Link 
-                        key={result.id} 
+                      <Link
+                        key={result.id}
                         href={`/screenings/${result.id}`}
                         className={styles.searchResultItem}
                         onClick={() => setSearchQuery("")}
@@ -330,8 +330,8 @@ export default function DashboardLayout({
 
           <div className={styles.headerRight}>
             <ThemeToggle />
-            <button 
-              className={styles.iconBtn} 
+            <button
+              className={styles.iconBtn}
               onClick={() => setNotificationModalOpen(true)}
               title="Notifications"
             >
@@ -342,8 +342,8 @@ export default function DashboardLayout({
             </button>
 
             <div className={styles.profileWrapper}>
-              <div 
-                className={styles.profileInfo} 
+              <div
+                className={styles.profileInfo}
                 onClick={(e) => {
                   e.stopPropagation();
                   setProfileMenuOpen(!profileMenuOpen);

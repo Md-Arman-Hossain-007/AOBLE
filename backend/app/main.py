@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import uvicorn
 
-from .api import screening_v2, screenings, users, monitoring, auth, stats, admin, compliance, billing, notifications, bulk, transactions, case_management, case_management_v2, integrations, analytics, utils, history_audit, external_search
+from .api import amltab, screening_v2, screenings, users, monitoring, auth, stats, admin, compliance, billing, notifications, bulk, transactions, case_management, case_management_v2, integrations, analytics, utils, history_audit, external_search
 from .db.session import engine, Base
 from .core.config import settings
 
@@ -49,6 +49,7 @@ app.include_router(analytics.router, prefix=f"{settings.API_V1_STR}/analytics", 
 app.include_router(utils.router, prefix=f"{settings.API_V1_STR}/utils", tags=["Utils"])
 app.include_router(history_audit.router, tags=["History & Audit"])
 app.include_router(external_search.router, prefix=f"{settings.API_V1_STR}/external-search", tags=["External Search"])
+app.include_router(amltab.router)
 
 @app.on_event("startup")
 async def startup_event():

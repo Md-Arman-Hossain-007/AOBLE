@@ -213,3 +213,18 @@ class ScreeningListEntry(BaseModel):
     top_match_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+class RESTIndividualRequest(BaseModel):
+    type: str = "individual"
+    first_name: str
+    last_name: str
+    dob: Optional[str] = None
+    country: Optional[str] = None
+    threshold: float = 0.80
+
+class RESTCompanyRequest(BaseModel):
+    type: str = "company"
+    name: str
+    registration_number: Optional[str] = None
+    country: Optional[str] = None
+    threshold: float = 0.85
