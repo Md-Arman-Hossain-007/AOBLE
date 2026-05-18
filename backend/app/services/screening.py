@@ -374,10 +374,28 @@ async def perform_screening(
 
     yente_query = {req.customer_ref: {"schema": schema, "properties": properties}}
     
+    target_country = None
+    if req.individual and req.individual.nationality:
+        target_country = req.individual.nationality
+    elif req.entity and req.entity.country:
+        target_country = req.entity.country
+
+    effective_threshold = req.threshold
+    if target_country:
+        # High Risk Jurisdictions (FATF Grey/Black list, EU High Risk, Offshore centers)
+        high_risk_countries = [
+            "vu", "vg", "mc", "ae", "pa", "lb", "sy", "ye", "mz", "za", 
+            "mm", "kp", "ir", "cd", "ht", "jm", "ml", "ng", "sn", "ss", 
+            "tz", "ug", "bf", "cm", "hr", "ph", "vn", "bg", "sy", "af",
+            "iq"
+        ]
+        if target_country.lower() in high_risk_countries:
+            effective_threshold = max(0.50, req.threshold - 0.15) # Bump sensitivity by 15% for high risk
+    
     yente_response = await _call_yente(
         queries          = yente_query,
         algorithm        = req.algorithm.value,
-        threshold        = req.threshold,
+        threshold        = effective_threshold,
         limit            = req.match_limit,
         topics           = req.topics,
         include_datasets = req.include_datasets,

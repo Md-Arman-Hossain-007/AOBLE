@@ -42,8 +42,9 @@ const statusColors = {
 };
 
 function formatTimeAgo(timestamp: string): string {
+  const utcStr = timestamp.endsWith('Z') ? timestamp : `${timestamp}Z`;
   const now = new Date();
-  const then = new Date(timestamp);
+  const then = new Date(utcStr);
   const seconds = Math.floor((now.getTime() - then.getTime()) / 1000);
 
   if (seconds < 60) return "Just now";

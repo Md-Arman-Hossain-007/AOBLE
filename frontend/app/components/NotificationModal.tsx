@@ -199,13 +199,15 @@ export function NotificationModal({
   };
 
   const formatTimestamp = (dateStr: string) => {
-    const date = new Date(dateStr);
+    // Ensure the date string is treated as UTC if it lacks timezone info
+    const utcStr = dateStr.endsWith('Z') ? dateStr : `${dateStr}Z`;
+    const date = new Date(utcStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     
-    if (diffMins < 1) return "Just now";
+    if (diffMins < 1 || diffMins < 0) return "Just now";
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

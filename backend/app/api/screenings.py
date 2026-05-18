@@ -57,22 +57,7 @@ async def screen_entity(
     status_str = "Clear" if is_clear else "Review"
     screning_id_str = str(result.screening_id)
     
-    # Trigger Notification
-    try:
-        notification_service.create_notification(
-            db=db,
-            notification=notification_schemas.NotificationCreate(
-                user_id=current_user.username,
-                title="Screening Complete",
-                message=f"Screening for '{query_name}' completed with status: {status_str}. Matches found: {result.match_count}.",
-                type="screening",
-                priority="high" if result.match_count > 0 else "normal",
-                link=f"/screenings/{screning_id_str}",
-                metadata_json={"screening_id": screning_id_str, "match_count": result.match_count}
-            )
-        )
-    except Exception as e:
-        print(f"Error creating notification: {e}")
+    # Notification is handled internally by screening_service.screen() (perform_screening)
     
     if not is_clear:
         try:
